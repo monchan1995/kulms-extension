@@ -81,14 +81,18 @@
 
   // onclick属性からsakai_actionとcollectionIdを抽出
   function parseOnclick(onclick) {
+    if (!onclick) return null;
     var actionMatch = onclick.match(
-      /getElementById\s*\(\s*['"]sakai_action['"]\s*\)\.value\s*=\s*'([^']*)'/
+      /getElementById\s*\(\s*['"]sakai_action['"]\s*\)\.value\s*=\s*(?:'([^']*)'|"([^"]*)")/
     );
     var idMatch = onclick.match(
-      /getElementById\s*\(\s*['"]collectionId['"]\s*\)\.value\s*=\s*'([^']*)'/
+      /getElementById\s*\(\s*['"]collectionId['"]\s*\)\.value\s*=\s*(?:'([^']*)'|"([^"]*)")/
     );
     if (!actionMatch || !idMatch) return null;
-    return { action: actionMatch[1], collectionId: idMatch[1] };
+    var action = actionMatch[1] || actionMatch[2];
+    var collectionId = idMatch[1] || idMatch[2];
+    if (!action || !collectionId) return null;
+    return { action: action, collectionId: collectionId };
   }
 
   // fetchでフォルダ操作を実行 (ページ遷移なし)
@@ -158,13 +162,26 @@
         var link = e.target.closest(
           'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
         );
+        // フォルダ名の a タグ（onclick なし）→ 同じ行の展開/折りたたみリンクを使う
+        if (!link) {
+          var clickedAnchor = e.target.closest("td.title a, td.specialLink.title a");
+          if (clickedAnchor) {
+            var tr = clickedAnchor.closest("tr");
+            if (tr) {
+              link = tr.querySelector(
+                'td.title a[onclick*="doExpand_collection"], td.title a[onclick*="doCollapse_collection"],' +
+                  "td.specialLink.title a[onclick*=\"doExpand_collection\"], td.specialLink.title a[onclick*=\"doCollapse_collection\"]"
+              );
+            }
+          }
+        }
         if (!link || isBusy) return;
-
-        e.preventDefault();
-        e.stopPropagation();
 
         var parsed = parseOnclick(link.getAttribute("onclick") || "");
         if (!parsed) return;
+
+        e.preventDefault();
+        e.stopPropagation();
 
         isBusy = true;
         submitFolderAction(parsed.action, parsed.collectionId).then(function () {
