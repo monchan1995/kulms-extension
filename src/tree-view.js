@@ -124,14 +124,53 @@
     });
   }
 
-  function initFolderFeatures(settings) {
-    console.log("[KULMS Extension] Resources page: applying folder features");
-
-  // --- 深さ判定 (padding-left em値から) ---
-  function getDepth(td) {
+  /** Sakai のインライン padding-left(em) から段階の目安を得る */
+  function kulmsPaddingDepthFromInlineTd(td) {
+    if (!td) return 0;
     var pl = parseFloat(td.style.paddingLeft);
     if (isNaN(pl) || pl <= 0.5) return 0;
     return Math.max(0, Math.round((pl - 0.5) / 1.5));
+  }
+
+  /**
+   * パスキーからリスト上のインデント段数（ルート直下=0、1つネストごとに+1）
+   */
+  function kulmsPathDepthFromSortKey(k) {
+    if (k === "\uffff") return null;
+    var s = String(k || "").replace(/\/+$/, "");
+    if (!s || s === "/") return 0;
+    var n = s.split("/").filter(function (seg) {
+      return seg.length;
+    }).length;
+    return Math.max(0, n - 1);
+  }
+
+  /** ツリー表示時：コンテンツパスに応じてタイトル列の左余白を揃える */
+  function kulmsApplyPathIndentToResourceTable(resourceTable) {
+    if (!resourceTable.classList.contains("kulms-tree-view")) return;
+    resourceTable.querySelectorAll("tbody tr").forEach(function (tr) {
+      if (kulmsIsMetaHeaderRow(tr)) return;
+      var k = kulmsGetResourceRowSortKey(tr);
+      var depth =
+        k === "\uffff"
+          ? kulmsPaddingDepthFromInlineTd(tr.querySelector("td.title, td.specialLink.title"))
+          : kulmsPathDepthFromSortKey(k);
+      var pad = 0.5 + depth * 1.5 + "em";
+      tr.querySelectorAll("td.title, td.specialLink.title").forEach(function (td) {
+        td.style.paddingLeft = pad;
+      });
+    });
+  }
+
+  function initFolderFeatures(settings) {
+    console.log("[KULMS Extension] Resources page: applying folder features");
+
+  // --- 深さ判定 (パス優先、なければインライン padding) ---
+  function getDepth(tr, td) {
+    var k = kulmsGetResourceRowSortKey(tr);
+    var pd = kulmsPathDepthFromSortKey(k);
+    if (pd !== null) return pd;
+    return kulmsPaddingDepthFromInlineTd(td);
   }
 
   // --- フォルダ判定 ---
@@ -147,7 +186,7 @@
   table.querySelectorAll("tbody tr").forEach(function (tr) {
     var td = tr.querySelector("td.title");
     if (!td) return;
-    var depth = getDepth(td);
+    var depth = getDepth(tr, td);
     if (!paddingByDepth.has(depth)) {
       paddingByDepth.set(depth, parseFloat(window.getComputedStyle(td).paddingLeft) || 0);
     }
@@ -161,7 +200,7 @@
     var td = tr.querySelector("td.title");
     if (!td) return;
 
-    var depth = getDepth(td);
+    var depth = getDepth(tr, td);
     var folder = isFolder(tr, td);
 
     tr.dataset.kulmsDepth = String(depth);
@@ -176,7 +215,7 @@
     table.querySelectorAll("tbody tr").forEach(function (tr) {
       var td = tr.querySelector("td.title");
       if (!td) return;
-      var depth = getDepth(td);
+      var depth = getDepth(tr, td);
       if (!paddingByDepth.has(depth)) {
         paddingByDepth.set(
           depth,
@@ -184,6 +223,7 @@
         );
       }
     });
+    kulmsApplyPathIndentToResourceTable(table);
     table.querySelectorAll("tbody tr").forEach(processRow);
     // innerHTML置換で失われた Bootstrap Popover を再初期化
     if (typeof bootstrap !== "undefined" && bootstrap.Popover) {
@@ -197,6 +237,7 @@
     if (typeof window.__kulmsRefreshBulkDownload === "function") {
       window.__kulmsRefreshBulkDownload();
     }
+    kulmsApplyPathIndentToResourceTable(table);
   }
 
   // onclick属性からsakai_actionとcollectionIdを抽出
@@ -239,6 +280,7 @@
       if (!newTbody) return false;
       oldTbody.innerHTML = newTbody.innerHTML;
       kulmsReorderResourceRowsByPath(table);
+      kulmsApplyPathIndentToResourceTable(table);
       oldTbody.classList.remove("kulms-tbody-folder-loading");
       var reducedMotion =
         window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -337,6 +379,7 @@
 
   // --- 適用 ---
   table.classList.add("kulms-tree-view");
+  kulmsApplyPathIndentToResourceTable(table);
   table.querySelectorAll("tbody tr").forEach(processRow);
 
   // --- 初回自動展開 ---
@@ -766,6 +809,7 @@
         });
         updateNewBtn();
         updateSelectedCount();
+        kulmsApplyPathIndentToResourceTable(table);
       };
     });
   } // end initBulkDownload
