@@ -113,7 +113,12 @@ body {
 
 .kulms-assign-header-btn:hover,
 .kulms-assign-close:hover {
-  background: color-mix(in srgb, var(--sakai-text-color-1, #333) 12%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--sakai-background-color-4, var(--sakai-background-color-3, #dfe3ea)) 58%,
+    var(--sakai-background-color-1, #ffffff)
+  ) !important;
+  color: var(--sakai-text-color-1, #333) !important;
 }
 
 /* タブバー */
@@ -144,6 +149,15 @@ body {
 .kulms-panel-tab.active {
   background: #6483d3 !important;
   color: #fff !important;
+}
+
+#kulms-assign-panel .kulms-panel-tab:hover:not(.active) {
+  background: color-mix(
+    in srgb,
+    var(--sakai-background-color-4, var(--sakai-background-color-3, #dfe3ea)) 58%,
+    var(--sakai-background-color-1, #ffffff)
+  ) !important;
+  color: var(--sakai-text-color-1, #333) !important;
 }
 
 /* キャッシュ情報 */
@@ -1599,7 +1613,11 @@ body.kulms-panel-pushed .kulms-top-favbar {
 }
 
 .kulms-top-favbar-item:hover {
-  background: rgba(0, 0, 0, 0.1) !important;
+  background: color-mix(
+    in srgb,
+    var(--sakai-background-color-4, var(--sakai-background-color-3, #dfe3ea)) 52%,
+    var(--sakai-background-color-1, #ffffff)
+  ) !important;
   text-decoration: none !important;
   color: var(--sakai-text-color-1, #333) !important;
 }
@@ -1684,7 +1702,11 @@ body.kulms-panel-pushed .kulms-top-favbar {
   opacity: 0.9;
 }
 .kulms-top-favbar.kulms-favbar-dropdown-mode .kulms-top-favbar-item.is-open {
-  background: color-mix(in srgb, var(--sakai-text-color-1, #333) 10%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--sakai-background-color-4, var(--sakai-background-color-3, #dfe3ea)) 55%,
+    var(--sakai-background-color-1, #ffffff)
+  ) !important;
 }
 
 .kulms-favbar-dropdown {
@@ -1719,8 +1741,12 @@ body.kulms-panel-pushed .kulms-top-favbar {
   transition: background 0.12s, color 0.12s;
 }
 .kulms-favbar-dropdown-item:hover {
-  background: color-mix(in srgb, var(--sakai-primary-color-1, #1a73e8) 16%, transparent) !important;
-  color: var(--sakai-primary-color-1, #1a73e8) !important;
+  background: color-mix(
+    in srgb,
+    var(--sakai-background-color-4, var(--sakai-background-color-3, #dfe3ea)) 58%,
+    var(--sakai-background-color-1, #ffffff)
+  ) !important;
+  color: var(--sakai-text-color-1, #333) !important;
 }
 .kulms-favbar-dropdown-item > i {
   flex-shrink: 0;
@@ -1757,7 +1783,12 @@ body.kulms-panel-pushed .kulms-top-favbar {
   font-family: inherit;
 }
 .kulms-favbar-dropdown-other:hover {
-  background: color-mix(in srgb, var(--sakai-text-color-1, #333) 8%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--sakai-background-color-4, var(--sakai-background-color-3, #dfe3ea)) 58%,
+    var(--sakai-background-color-1, #ffffff)
+  );
+  color: var(--sakai-text-color-1, #333);
 }
 
 /* === 一括ダウンロード機能（Sakai の CSS 変数でライト/ダーク両対応・サイト内テーマ切替も追従） === */
