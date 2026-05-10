@@ -1789,12 +1789,23 @@ body.kulms-panel-pushed .kulms-top-favbar {
 }
 
 /* チェックボックス列 */
+/* チェックボックス列：固定幅・縮小禁止 */
 table.resourcesList th.kulms-check-col,
 table.resourcesList td.kulms-check-col {
   width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
   text-align: center !important;
   padding: 4px 2px !important;
   vertical-align: middle !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+/* title列がチェックボックス列追加後も縮まないよう最小幅を確保 */
+table.resourcesList td.title,
+table.resourcesList th.title {
+  min-width: 200px !important;
 }
 
 table.resourcesList td.kulms-check-col input[type="checkbox"] {
