@@ -1755,15 +1755,15 @@ body.kulms-panel-pushed .kulms-top-favbar {
   }
 }
 
-/* === 一括ダウンロード機能 === */
+/* === 一括ダウンロード機能（Sakai の CSS 変数でライト/ダーク両対応・サイト内テーマ切替も追従） === */
 
 .kulms-bulk-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #f0f4ff;
-  border: 1px solid #c8d8ff;
+  background: var(--sakai-background-color-3, #e9ecef);
+  border: 1px solid var(--sakai-border-color, #dee2e6);
   border-radius: 6px;
   margin-bottom: 10px;
   flex-wrap: wrap;
@@ -1780,12 +1780,12 @@ body.kulms-panel-pushed .kulms-top-favbar {
 }
 
 .kulms-bulk-btn-primary {
-  background: #1a73e8;
-  color: #fff;
+  background: var(--sakai-primary-color-1, #1a73e8);
+  color: var(--sakai-text-color-inverted, #fff);
 }
 
 .kulms-bulk-btn-primary:hover:not(:disabled) {
-  background: #1558b0;
+  background: var(--sakai-primary-color-2, #1558b0);
 }
 
 .kulms-bulk-btn-primary:disabled {
@@ -1794,12 +1794,12 @@ body.kulms-panel-pushed .kulms-top-favbar {
 }
 
 .kulms-bulk-btn-new {
-  background: #e67700;
-  color: #fff;
+  background: var(--sakai-color-orange, #d97008);
+  color: var(--sakai-text-color-inverted, #fff);
 }
 
 .kulms-bulk-btn-new:hover:not(:disabled) {
-  background: #b85d00;
+  background: var(--sakai-color-orange--darker-1, #c56607);
 }
 
 .kulms-bulk-btn-new:disabled {
@@ -1812,12 +1812,12 @@ body.kulms-panel-pushed .kulms-top-favbar {
   cursor: pointer;
   width: 15px;
   height: 15px;
-  accent-color: #1a73e8;
+  accent-color: var(--sakai-primary-color-1, #1a73e8);
 }
 
 .kulms-bulk-label {
   font-size: 13px;
-  color: #444;
+  color: var(--sakai-text-color-1, #333);
   user-select: none;
 }
 
@@ -1853,7 +1853,7 @@ table.resourcesList td.kulms-check-col input[type="checkbox"] {
   cursor: pointer;
   width: 15px;
   height: 15px;
-  accent-color: #1a73e8;
+  accent-color: var(--sakai-primary-color-1, #1a73e8);
 }
 
 /* Bootstrap table-striped の縞々を完全廃止 */
@@ -1878,8 +1878,8 @@ table.resourcesList tr.kulms-selectable-row:hover > td {
 /* ツールバー既読ボタン */
 .kulms-bulk-btn-mark-read {
   background: transparent;
-  border: 1px solid rgba(128, 128, 128, 0.4);
-  color: inherit;
+  border: 1px solid var(--sakai-border-color, rgba(128, 128, 128, 0.4));
+  color: var(--sakai-text-color-1, inherit);
   border-radius: 4px;
   padding: 4px 10px;
   cursor: pointer;
@@ -1887,7 +1887,7 @@ table.resourcesList tr.kulms-selectable-row:hover > td {
   white-space: nowrap;
 }
 .kulms-bulk-btn-mark-read:hover:not(:disabled) {
-  background: rgba(128, 128, 128, 0.15);
+  background: var(--sakai-background-color-2, rgba(128, 128, 128, 0.15));
 }
 .kulms-bulk-btn-mark-read:disabled {
   opacity: 0.4;
@@ -1934,55 +1934,11 @@ table.resourcesList tr:hover .kulms-mark-read-row-btn:hover {
   background: rgba(128, 128, 128, 0.35);
 }
 
-/* 新着ハイライト */
+/* 新着ハイライト（テーマのプライマリで色が変わる） */
 table.resourcesList tr.kulms-new-file > td {
-  background-color: rgba(26, 115, 232, 0.08) !important;
+  background-color: color-mix(in srgb, var(--sakai-primary-color-1, #289ae2) 22%, transparent) !important;
 }
 
 table.resourcesList tr.kulms-new-file:hover > td {
-  background-color: rgba(26, 115, 232, 0.15) !important;
+  background-color: color-mix(in srgb, var(--sakai-primary-color-1, #289ae2) 32%, transparent) !important;
 }
-
-/* ダークモード対応 */
-@media (prefers-color-scheme: dark) {
-  .kulms-bulk-toolbar {
-    background: #25282c;
-    border-color: #3a3e44;
-  }
-  .kulms-bulk-label {
-    color: #aeb2b8;
-  }
-  .kulms-bulk-btn-primary {
-    background: #3d556d;
-    color: #e8eaed;
-  }
-  .kulms-bulk-btn-primary:hover:not(:disabled) {
-    background: #4a647d;
-  }
-  .kulms-bulk-btn-new {
-    background: #5c4d32;
-    color: #eee8dc;
-  }
-  .kulms-bulk-btn-new:hover:not(:disabled) {
-    background: #6d5c3c;
-  }
-  .kulms-bulk-btn-mark-read {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-  .kulms-bulk-btn-mark-read:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
-  }
-  .kulms-bulk-select-all,
-  table.resourcesList td.kulms-check-col input[type="checkbox"] {
-    accent-color: #5a7a9a;
-  }
-  table.resourcesList tr.kulms-new-file > td {
-    background-color: rgba(58, 140, 232, 0.35) !important;
-    background-image: none !important;
-  }
-  table.resourcesList tr.kulms-new-file:hover > td {
-    background-color: rgba(58, 140, 232, 0.48) !important;
-    background-image: none !important;
-  }
-}
-
