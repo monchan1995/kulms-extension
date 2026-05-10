@@ -1809,6 +1809,15 @@ table.resourcesList tr > td {
   background-color: transparent !important;
 }
 
+/* 行クリックで選択できる行 */
+table.resourcesList tr.kulms-selectable-row {
+  cursor: pointer;
+}
+
+table.resourcesList tr.kulms-selectable-row:hover > td {
+  background-color: rgba(26, 115, 232, 0.06) !important;
+}
+
 /* 新着ハイライト */
 table.resourcesList tr.kulms-new-file > td {
   background-color: #fffbe6 !important;

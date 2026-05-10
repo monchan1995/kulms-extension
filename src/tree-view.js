@@ -332,6 +332,15 @@
           cb.addEventListener("change", updateSelectedCount);
           cbTd.appendChild(cb);
           tr.insertBefore(cbTd, tr.firstChild);
+
+          // 行の余白クリックでチェックボックスをトグル
+          tr.classList.add("kulms-selectable-row");
+          tr.addEventListener("click", function (e) {
+            // リンク・ボタン・チェックボックス自体のクリックは除外
+            if (e.target.closest("a, button, input, .btn-group")) return;
+            cb.checked = !cb.checked;
+            updateSelectedCount();
+          });
         }
       });
 
