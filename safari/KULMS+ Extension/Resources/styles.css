@@ -1831,11 +1831,11 @@ table.resourcesList tr.kulms-selectable-row:hover > td {
 
 /* 新着ハイライト */
 table.resourcesList tr.kulms-new-file > td {
-  background-color: #fffbe6 !important;
+  background-color: rgba(26, 115, 232, 0.08) !important;
 }
 
 table.resourcesList tr.kulms-new-file:hover > td {
-  background-color: #fff3c4 !important;
+  background-color: rgba(26, 115, 232, 0.15) !important;
 }
 
 /* ダークモード対応 */
@@ -1848,10 +1848,10 @@ table.resourcesList tr.kulms-new-file:hover > td {
     color: #ccc;
   }
   table.resourcesList tr.kulms-new-file > td {
-    background-color: #2a2300 !important;
+    background-color: rgba(58, 140, 232, 0.15) !important;
   }
   table.resourcesList tr.kulms-new-file:hover > td {
-    background-color: #3a3000 !important;
+    background-color: rgba(58, 140, 232, 0.25) !important;
   }
 }
 
