@@ -298,14 +298,20 @@
       var reducedMotion =
         window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!reducedMotion) {
-        oldTbody.classList.remove("kulms-tbody-flash-in");
+        var resourceTrs = [];
+        oldTbody.querySelectorAll("tr").forEach(function (tr) {
+          if (!kulmsIsMetaHeaderRow(tr)) resourceTrs.push(tr);
+        });
+        var n = resourceTrs.length;
+        var maxDelayMs = 1200;
+        var stepMs =
+          n <= 1 ? 0 : Math.min(65, Math.max(40, Math.floor(maxDelayMs / (n - 1))));
         void oldTbody.offsetWidth;
-        oldTbody.classList.add("kulms-tbody-flash-in");
-        var onFlashEnd = function () {
-          oldTbody.removeEventListener("animationend", onFlashEnd);
-          oldTbody.classList.remove("kulms-tbody-flash-in");
-        };
-        oldTbody.addEventListener("animationend", onFlashEnd);
+        resourceTrs.forEach(function (tr, i) {
+          var delayMs = Math.min(i * stepMs, maxDelayMs);
+          tr.style.setProperty("--kulms-stagger-delay", delayMs + "ms");
+          tr.classList.add("kulms-row-reveal");
+        });
       }
       return true;
     } catch (e) {
