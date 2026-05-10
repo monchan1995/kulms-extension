@@ -47,6 +47,8 @@
     var folder = isFolder(tr, td);
 
     tr.dataset.kulmsDepth = String(depth);
+    if (folder) tr.classList.add("kulms-folder-toggle-row");
+    else tr.classList.remove("kulms-folder-toggle-row");
   }
 
   // --- フォルダ操作の共通処理 ---
@@ -110,6 +112,9 @@
     params.set("sakai_action", action);
     params.set("collectionId", collectionId);
 
+    var oldTbody = table.querySelector("tbody");
+    if (!oldTbody) return false;
+    oldTbody.classList.add("kulms-tbody-folder-loading");
     try {
       var res = await fetch(form.action || window.location.href, {
         method: "POST",
@@ -124,13 +129,27 @@
       if (!newTable) return false;
 
       var newTbody = newTable.querySelector("tbody");
-      var oldTbody = table.querySelector("tbody");
-      if (!newTbody || !oldTbody) return false;
+      if (!newTbody) return false;
       oldTbody.innerHTML = newTbody.innerHTML;
+      oldTbody.classList.remove("kulms-tbody-folder-loading");
+      var reducedMotion =
+        window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reducedMotion) {
+        oldTbody.classList.remove("kulms-tbody-flash-in");
+        void oldTbody.offsetWidth;
+        oldTbody.classList.add("kulms-tbody-flash-in");
+        var onFlashEnd = function () {
+          oldTbody.removeEventListener("animationend", onFlashEnd);
+          oldTbody.classList.remove("kulms-tbody-flash-in");
+        };
+        oldTbody.addEventListener("animationend", onFlashEnd);
+      }
       return true;
     } catch (e) {
       console.warn("[KULMS] folder action failed:", e);
       return false;
+    } finally {
+      oldTbody.classList.remove("kulms-tbody-folder-loading");
     }
   }
 
@@ -139,7 +158,7 @@
     isBusy = true;
     for (var i = 0; i < 30; i++) {
       var collapsed = table.querySelectorAll(
-        'td.title a[onclick*="doExpand_collection"]'
+        'td.title a[onclick*="doExpand_collection"], td.specialLink.title a[onclick*="doExpand_collection"]'
       );
       if (collapsed.length === 0) break;
 
@@ -159,22 +178,37 @@
     table.addEventListener(
       "click",
       function (e) {
+        if (e.target.closest("button, input, select, textarea, .btn-group, label")) return;
+
         var link = e.target.closest(
           'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
         );
-        // フォルダ名の a タグ（onclick なし）→ 同じ行の展開/折りたたみリンクを使う
+
+        // フォルダ名など「中身へ進む」実リンクはそのまま。余白・アイコン（トグル）のみ SPA 展開
         if (!link) {
-          var clickedAnchor = e.target.closest("td.title a, td.specialLink.title a");
-          if (clickedAnchor) {
-            var tr = clickedAnchor.closest("tr");
-            if (tr) {
-              link = tr.querySelector(
-                'td.title a[onclick*="doExpand_collection"], td.title a[onclick*="doCollapse_collection"],' +
-                  "td.specialLink.title a[onclick*=\"doExpand_collection\"], td.specialLink.title a[onclick*=\"doCollapse_collection\"]"
-              );
-            }
+          var row = e.target.closest("tbody tr.kulms-folder-toggle-row");
+          if (!row || isBusy) return;
+          var toggle = row.querySelector(
+            'td.title a[onclick*="doExpand_collection"], td.title a[onclick*="doCollapse_collection"],' +
+              'td.specialLink.title a[onclick*="doExpand_collection"], td.specialLink.title a[onclick*="doCollapse_collection"]'
+          );
+          if (!toggle) return;
+
+          var hitA = e.target.closest("a");
+          if (hitA && hitA !== toggle) {
+            var href = (hitA.getAttribute("href") || "").trim();
+            var oc = hitA.getAttribute("onclick") || "";
+            var hitIsToggle = /doExpand_collection|doCollapse_collection/.test(oc);
+            var placeholderHref =
+              href === "" ||
+              href === "#" ||
+              /^javascript:/i.test(href) ||
+              /^mailto:/i.test(href);
+            if (!hitIsToggle && !placeholderHref) return;
           }
+          link = toggle;
         }
+
         if (!link || isBusy) return;
 
         var parsed = parseOnclick(link.getAttribute("onclick") || "");

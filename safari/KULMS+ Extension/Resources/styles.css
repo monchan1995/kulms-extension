@@ -1277,6 +1277,39 @@ table.resourcesList.kulms-tree-view th {
   border-top: none !important;
 }
 
+/* フォルダ行: 余白クリックで展開（実リンクはブラウザ既定） */
+table.resourcesList.kulms-tree-view tr.kulms-folder-toggle-row {
+  cursor: pointer;
+}
+
+/* フォルダ展開のフィードバック（ロード→一覧入替→軽いスライドイン） */
+table.resourcesList.kulms-tree-view tbody.kulms-tbody-folder-loading {
+  opacity: 0.72;
+  transition: opacity 0.18s ease;
+}
+@keyframes kulms-tbody-flash-in {
+  from {
+    opacity: 0.62;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+table.resourcesList.kulms-tree-view tbody.kulms-tbody-flash-in {
+  animation: kulms-tbody-flash-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  table.resourcesList.kulms-tree-view tbody.kulms-tbody-folder-loading {
+    opacity: 1;
+    transition: none;
+  }
+  table.resourcesList.kulms-tree-view tbody.kulms-tbody-flash-in {
+    animation: none !important;
+  }
+}
+
 /* === サイドバー系スタイル === */
 
 /* コース行のクリック領域拡大 */
