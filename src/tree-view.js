@@ -291,6 +291,13 @@
 
       var newTbody = newTable.querySelector("tbody");
       if (!newTbody) return false;
+
+      var preFolderActionRowKeys = new Set();
+      oldTbody.querySelectorAll("tr").forEach(function (tr) {
+        if (kulmsIsMetaHeaderRow(tr)) return;
+        preFolderActionRowKeys.add(String(kulmsGetResourceRowSortKey(tr)));
+      });
+
       oldTbody.innerHTML = newTbody.innerHTML;
       kulmsReorderResourceRowsByPath(table);
       kulmsApplyPathIndentToResourceTable(table);
@@ -298,16 +305,25 @@
       var reducedMotion =
         window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!reducedMotion) {
-        var resourceTrs = [];
+        var rowsToReveal = [];
         oldTbody.querySelectorAll("tr").forEach(function (tr) {
-          if (!kulmsIsMetaHeaderRow(tr)) resourceTrs.push(tr);
+          if (kulmsIsMetaHeaderRow(tr)) return;
+          var key = String(kulmsGetResourceRowSortKey(tr));
+          if (preFolderActionRowKeys.has(key)) {
+            tr.classList.remove("kulms-row-reveal");
+            tr.style.removeProperty("--kulms-stagger-delay");
+            tr.style.opacity = "";
+            tr.style.transform = "";
+          } else {
+            rowsToReveal.push(tr);
+          }
         });
-        var n = resourceTrs.length;
+        var n = rowsToReveal.length;
         var maxDelayMs = 1200;
         var stepMs =
           n <= 1 ? 0 : Math.min(65, Math.max(40, Math.floor(maxDelayMs / (n - 1))));
         void oldTbody.offsetWidth;
-        resourceTrs.forEach(function (tr, i) {
+        rowsToReveal.forEach(function (tr, i) {
           var delayMs = Math.min(i * stepMs, maxDelayMs);
           tr.style.setProperty("--kulms-stagger-delay", delayMs + "ms");
           tr.classList.add("kulms-row-reveal");
