@@ -213,7 +213,7 @@
                 td.querySelector('img[src*="folder"]'));
     }
 
-    // ファイル行のダウンロードURLを取得
+    // ファイル行のダウンロードURLを取得（クエリパラメータ除去して正規化）
     function getFileUrl(tr) {
       var td = tr.querySelector("td.title");
       if (!td) return null;
@@ -222,7 +222,7 @@
       for (var i = 0; i < links.length; i++) {
         var a = links[i];
         if (!a.getAttribute("onclick") && a.href && a.href !== "#") {
-          return a.href;
+          return a.href.split("?")[0];
         }
       }
       return null;
