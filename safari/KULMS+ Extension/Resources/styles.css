@@ -1913,11 +1913,35 @@ table.resourcesList tr.kulms-new-file:hover > td {
 /* ダークモード対応 */
 @media (prefers-color-scheme: dark) {
   .kulms-bulk-toolbar {
-    background: #1e2a3a;
-    border-color: #2d4a6e;
+    background: #25282c;
+    border-color: #3a3e44;
   }
   .kulms-bulk-label {
-    color: #ccc;
+    color: #aeb2b8;
+  }
+  .kulms-bulk-btn-primary {
+    background: #3d556d;
+    color: #e8eaed;
+  }
+  .kulms-bulk-btn-primary:hover:not(:disabled) {
+    background: #4a647d;
+  }
+  .kulms-bulk-btn-new {
+    background: #5c4d32;
+    color: #eee8dc;
+  }
+  .kulms-bulk-btn-new:hover:not(:disabled) {
+    background: #6d5c3c;
+  }
+  .kulms-bulk-btn-mark-read {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  .kulms-bulk-btn-mark-read:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .kulms-bulk-select-all,
+  table.resourcesList td.kulms-check-col input[type="checkbox"] {
+    accent-color: #5a7a9a;
   }
   table.resourcesList tr.kulms-new-file > td {
     background-color: rgba(58, 140, 232, 0.35) !important;
