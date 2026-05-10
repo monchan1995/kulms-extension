@@ -6,6 +6,94 @@
   var table = document.querySelector("table.resourcesList");
   if (!table) return;
 
+  /** Sakai Resources: onclick から sakai_action / collectionId */
+  function kulmsParseFolderOnclick(onclick) {
+    if (!onclick) return null;
+    var actionMatch = onclick.match(
+      /getElementById\s*\(\s*['"]sakai_action['"]\s*\)\.value\s*=\s*(?:'([^']*)'|"([^"]*)")/
+    );
+    var idMatch = onclick.match(
+      /getElementById\s*\(\s*['"]collectionId['"]\s*\)\.value\s*=\s*(?:'([^']*)'|"([^"]*)")/
+    );
+    if (!actionMatch || !idMatch) return null;
+    var action = actionMatch[1] || actionMatch[2];
+    var collectionId = idMatch[1] || idMatch[2];
+    if (!action || !collectionId) return null;
+    return { action: action, collectionId: collectionId };
+  }
+
+  function kulmsPathKeyFromCollectionId(collectionId) {
+    var id = String(collectionId || "").trim();
+    if (!id) return "\uffff";
+    id = id.replace(/^\/group\/[^/]+\//, "");
+    return id.replace(/\/+$/, "") + "/";
+  }
+
+  function kulmsGetResourceRowSortKey(tr) {
+    var td = tr.querySelector("td.title, td.specialLink.title");
+    if (!td) return "\uffff";
+    var links = td.querySelectorAll("a[href]");
+    var i;
+    for (i = 0; i < links.length; i++) {
+      var a = links[i];
+      if (!a.getAttribute("onclick") && a.href && a.href !== "#") {
+        var u = a.href.split("?")[0];
+        var m = u.match(/\/access\/content\/group\/[^/]+\/(.+)$/i);
+        if (m) {
+          var path = decodeURIComponent(m[1]);
+          return path.replace(/\/+$/, "");
+        }
+      }
+    }
+    var exp = td.querySelector(
+      'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
+    );
+    if (exp) {
+      var p = kulmsParseFolderOnclick(exp.getAttribute("onclick") || "");
+      if (p && p.collectionId) return kulmsPathKeyFromCollectionId(p.collectionId);
+    }
+    return "\uffff";
+  }
+
+  /** パスセグメントで親→子の順（ツリーに近い）になるよう比較 */
+  function kulmsPathTreeCompare(ka, kb) {
+    if (ka === kb) return 0;
+    if (ka === "\uffff" && kb === "\uffff") return 0;
+    if (ka === "\uffff") return 1;
+    if (kb === "\uffff") return -1;
+    var fa = /\/$/.test(ka);
+    var fb = /\/$/.test(kb);
+    var sa = ka.replace(/\/+$/, "").split("/").filter(function (s) { return s.length; });
+    var sb = kb.replace(/\/+$/, "").split("/").filter(function (s) { return s.length; });
+    var len = Math.min(sa.length, sb.length);
+    var i;
+    for (i = 0; i < len; i++) {
+      var c = sa[i].localeCompare(sb[i], "ja", { numeric: true, sensitivity: "base" });
+      if (c !== 0) return c;
+    }
+    if (sa.length < sb.length) return -1;
+    if (sa.length > sb.length) return 1;
+    if (fa && !fb) return -1;
+    if (!fa && fb) return 1;
+    return 0;
+  }
+
+  function kulmsReorderResourceRowsByPath(resourceTable) {
+    var tb = resourceTable.querySelector("tbody");
+    if (!tb) return;
+    var rows = Array.prototype.slice.call(tb.querySelectorAll("tr"));
+    if (rows.length < 2) return;
+    rows.sort(function (a, b) {
+      return kulmsPathTreeCompare(
+        kulmsGetResourceRowSortKey(a),
+        kulmsGetResourceRowSortKey(b)
+      );
+    });
+    rows.forEach(function (tr) {
+      tb.appendChild(tr);
+    });
+  }
+
   function initFolderFeatures(settings) {
     console.log("[KULMS Extension] Resources page: applying folder features");
 
@@ -83,18 +171,7 @@
 
   // onclick属性からsakai_actionとcollectionIdを抽出
   function parseOnclick(onclick) {
-    if (!onclick) return null;
-    var actionMatch = onclick.match(
-      /getElementById\s*\(\s*['"]sakai_action['"]\s*\)\.value\s*=\s*(?:'([^']*)'|"([^"]*)")/
-    );
-    var idMatch = onclick.match(
-      /getElementById\s*\(\s*['"]collectionId['"]\s*\)\.value\s*=\s*(?:'([^']*)'|"([^"]*)")/
-    );
-    if (!actionMatch || !idMatch) return null;
-    var action = actionMatch[1] || actionMatch[2];
-    var collectionId = idMatch[1] || idMatch[2];
-    if (!action || !collectionId) return null;
-    return { action: action, collectionId: collectionId };
+    return kulmsParseFolderOnclick(onclick);
   }
 
   // fetchでフォルダ操作を実行 (ページ遷移なし)
@@ -131,6 +208,7 @@
       var newTbody = newTable.querySelector("tbody");
       if (!newTbody) return false;
       oldTbody.innerHTML = newTbody.innerHTML;
+      kulmsReorderResourceRowsByPath(table);
       oldTbody.classList.remove("kulms-tbody-folder-loading");
       var reducedMotion =
         window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
