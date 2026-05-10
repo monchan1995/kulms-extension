@@ -1815,9 +1815,10 @@ table.resourcesList td.kulms-check-col input[type="checkbox"] {
   accent-color: #1a73e8;
 }
 
-/* Bootstrap table-striped の縞々を打ち消し */
+/* Bootstrap table-striped の縞々を打ち消し（background-image経由のグラデーションも除去） */
 table.resourcesList tr > td {
   background-color: transparent !important;
+  background-image: none !important;
 }
 
 /* 行クリックで選択できる行 */
@@ -1848,10 +1849,12 @@ table.resourcesList tr.kulms-new-file:hover > td {
     color: #ccc;
   }
   table.resourcesList tr.kulms-new-file > td {
-    background-color: rgba(58, 140, 232, 0.15) !important;
+    background-color: rgba(58, 140, 232, 0.35) !important;
+    background-image: none !important;
   }
   table.resourcesList tr.kulms-new-file:hover > td {
-    background-color: rgba(58, 140, 232, 0.25) !important;
+    background-color: rgba(58, 140, 232, 0.48) !important;
+    background-image: none !important;
   }
 }
 
