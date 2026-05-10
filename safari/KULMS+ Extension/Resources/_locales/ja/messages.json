@@ -155,6 +155,30 @@
   "featHideResourceColumnsDesc": {
     "message": "授業資料のアクセス・作成者・最終修正日・サイズ列を非表示"
   },
+  "featBulkDownload": {
+    "message": "一括ダウンロード"
+  },
+  "featBulkDownloadDesc": {
+    "message": "授業資料ページにチェックボックスを表示し、選択したファイルをまとめてダウンロード"
+  },
+  "featHighlightNew": {
+    "message": "新着ファイルのハイライト"
+  },
+  "featHighlightNewDesc": {
+    "message": "未ダウンロードのファイルをハイライト表示し、まとめてダウンロード可能"
+  },
+  "btnDownloadSelected": {
+    "message": "選択したファイルをダウンロード ($COUNT$件)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "btnDownloadNew": {
+    "message": "新着をすべてダウンロード ($COUNT$件)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
   "featCourseNameCleanup": {
     "message": "科目名の整理"
   },

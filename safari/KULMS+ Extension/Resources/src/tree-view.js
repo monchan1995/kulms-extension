@@ -73,6 +73,10 @@
         }
       });
     }
+    // 一括ダウンロードUIを再構築
+    if (typeof window.__kulmsRefreshBulkDownload === "function") {
+      window.__kulmsRefreshBulkDownload();
+    }
   }
 
   // onclick属性からsakai_actionとcollectionIdを抽出
@@ -151,9 +155,24 @@
     table.addEventListener(
       "click",
       function (e) {
+        // アイコンリンク（onclick属性あり）への直接クリック
         var link = e.target.closest(
           'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
         );
+
+        // フォルダ名テキストリンクへのクリック：同じ行のアイコンリンクを探す
+        if (!link) {
+          var clickedAnchor = e.target.closest("td.title a");
+          if (clickedAnchor) {
+            var tr = clickedAnchor.closest("tr");
+            if (tr) {
+              link = tr.querySelector(
+                'td.title a[onclick*="doExpand_collection"], td.title a[onclick*="doCollapse_collection"]'
+              );
+            }
+          }
+        }
+
         if (!link || isBusy) return;
 
         e.preventDefault();
@@ -183,9 +202,307 @@
 
   } // end initFolderFeatures
 
+  // === 一括ダウンロード機能 ===
+
+  function initBulkDownload(settings) {
+    // siteId をURLから取得（ストレージキーに使用）
+    var siteIdMatch = window.location.href.match(/[?&]sakai_action=doNavigate&[^#]*/) ||
+                      window.location.href.match(/\/site\/([^/?#]+)/);
+    var siteId = siteIdMatch ? siteIdMatch[1] || "default" : "default";
+    // URLパラメータからも試みる
+    var urlParams = new URLSearchParams(window.location.search);
+    var siteFromUrl = urlParams.get("site") || urlParams.get("siteId");
+    if (siteFromUrl) siteId = siteFromUrl;
+    // パスからも抽出
+    var pathMatch = window.location.pathname.match(/\/portal\/site\/([^/?#]+)/);
+    if (pathMatch) siteId = pathMatch[1];
+
+    var storageKey = "kulms-downloaded-" + siteId;
+
+    // フォルダ行かどうか判定
+    function isFolderRow(tr) {
+      var td = tr.querySelector("td.title");
+      if (!td) return true; // tdなければスキップ
+      return !!(td.querySelector('a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]') ||
+                td.querySelector(".fa-folder, .fa-folder-open") ||
+                td.querySelector('img[src*="folder"]'));
+    }
+
+    // ファイル行のダウンロードURLを取得
+    function getFileUrl(tr) {
+      var td = tr.querySelector("td.title");
+      if (!td) return null;
+      // onclickなし、かつhrefありのリンク
+      var links = td.querySelectorAll("a[href]");
+      for (var i = 0; i < links.length; i++) {
+        var a = links[i];
+        if (!a.getAttribute("onclick") && a.href && a.href !== "#") {
+          return a.href;
+        }
+      }
+      return null;
+    }
+
+    // ファイル名を取得
+    function getFileName(tr) {
+      var td = tr.querySelector("td.title");
+      if (!td) return "file";
+      var a = td.querySelector("a[href]:not([onclick])");
+      if (a && a.textContent.trim()) return a.textContent.trim();
+      return td.textContent.trim() || "file";
+    }
+
+    // ツールバーを生成・挿入
+    var toolbar = document.createElement("div");
+    toolbar.className = "kulms-bulk-toolbar";
+    toolbar.id = "kulms-bulk-toolbar";
+
+    // 全選択チェックボックス（bulkDownload有効時のみ）
+    var selectAllWrap = null;
+    if (settings.bulkDownload) {
+      selectAllWrap = document.createElement("label");
+      selectAllWrap.style.cssText = "display:flex;align-items:center;gap:4px;cursor:pointer";
+      var selectAllCb = document.createElement("input");
+      selectAllCb.type = "checkbox";
+      selectAllCb.className = "kulms-bulk-select-all";
+      selectAllCb.id = "kulms-select-all";
+      var selectAllLabel = document.createElement("span");
+      selectAllLabel.className = "kulms-bulk-label";
+      selectAllLabel.textContent = t("featBulkDownload");
+      selectAllWrap.appendChild(selectAllCb);
+      selectAllWrap.appendChild(selectAllLabel);
+      toolbar.appendChild(selectAllWrap);
+    }
+
+    // 選択DLボタン（bulkDownload有効時）
+    var downloadSelectedBtn = null;
+    if (settings.bulkDownload) {
+      downloadSelectedBtn = document.createElement("button");
+      downloadSelectedBtn.className = "kulms-bulk-btn kulms-bulk-btn-primary";
+      downloadSelectedBtn.disabled = true;
+      downloadSelectedBtn.textContent = t("btnDownloadSelected", ["0"]);
+      toolbar.appendChild(downloadSelectedBtn);
+    }
+
+    // 新着DLボタン（highlightNew有効時）
+    var downloadNewBtn = null;
+    if (settings.highlightNew) {
+      downloadNewBtn = document.createElement("button");
+      downloadNewBtn.className = "kulms-bulk-btn kulms-bulk-btn-new";
+      downloadNewBtn.disabled = true;
+      downloadNewBtn.textContent = t("btnDownloadNew", ["0"]);
+      toolbar.appendChild(downloadNewBtn);
+    }
+
+    // ツールバーを table の直前に挿入
+    table.parentNode.insertBefore(toolbar, table);
+
+    // チェックボックス列をヘッダーに追加（bulkDownload有効時）
+    if (settings.bulkDownload) {
+      var thead = table.querySelector("thead tr");
+      if (thead) {
+        var th = document.createElement("th");
+        th.className = "kulms-check-col";
+        thead.insertBefore(th, thead.firstChild);
+      }
+    }
+
+    // ダウンロード済みURLセットをストレージから読み込み、UI構築
+    window.__kulmsSafeStorage.get(storageKey, function (result) {
+      var downloadedSet = new Set(result[storageKey] || []);
+
+      // 各ファイル行を処理
+      var fileRows = [];
+      table.querySelectorAll("tbody tr").forEach(function (tr) {
+        if (isFolderRow(tr)) {
+          // フォルダ行：チェックボックス列のダミーセルを追加
+          if (settings.bulkDownload) {
+            var td = tr.querySelector("td");
+            if (td) {
+              var emptyTd = document.createElement("td");
+              emptyTd.className = "kulms-check-col";
+              tr.insertBefore(emptyTd, tr.firstChild);
+            }
+          }
+          return;
+        }
+
+        var url = getFileUrl(tr);
+        if (!url) return;
+        fileRows.push({ tr: tr, url: url });
+
+        // 新着ハイライト
+        if (settings.highlightNew && !downloadedSet.has(url)) {
+          tr.classList.add("kulms-new-file");
+        }
+
+        // チェックボックスを行に追加（bulkDownload有効時）
+        if (settings.bulkDownload) {
+          var cbTd = document.createElement("td");
+          cbTd.className = "kulms-check-col";
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.dataset.kulmsUrl = url;
+          cb.dataset.kulmsName = getFileName(tr);
+          cb.addEventListener("change", updateSelectedCount);
+          cbTd.appendChild(cb);
+          tr.insertBefore(cbTd, tr.firstChild);
+        }
+      });
+
+      // 新着件数を更新
+      function countNewFiles() {
+        return fileRows.filter(function (f) { return !downloadedSet.has(f.url); }).length;
+      }
+
+      function updateNewBtn() {
+        if (!downloadNewBtn) return;
+        var cnt = countNewFiles();
+        downloadNewBtn.textContent = t("btnDownloadNew", [String(cnt)]);
+        downloadNewBtn.disabled = cnt === 0;
+      }
+
+      function updateSelectedCount() {
+        if (!downloadSelectedBtn) return;
+        var checked = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]:checked');
+        var cnt = checked.length;
+        downloadSelectedBtn.textContent = t("btnDownloadSelected", [String(cnt)]);
+        downloadSelectedBtn.disabled = cnt === 0;
+        // 全選択チェックボックスの状態同期
+        if (selectAllCb) {
+          var allCbs = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]');
+          selectAllCb.indeterminate = cnt > 0 && cnt < allCbs.length;
+          selectAllCb.checked = allCbs.length > 0 && cnt === allCbs.length;
+        }
+      }
+
+      updateNewBtn();
+      updateSelectedCount();
+
+      // 全選択の動作
+      if (selectAllCb) {
+        selectAllCb.addEventListener("change", function () {
+          table.querySelectorAll('td.kulms-check-col input[type="checkbox"]').forEach(function (cb) {
+            cb.checked = selectAllCb.checked;
+          });
+          updateSelectedCount();
+        });
+      }
+
+      // ダウンロード実行（順番に1件ずつ）
+      async function downloadFiles(urls, names) {
+        var newDownloaded = new Set(downloadedSet);
+        for (var i = 0; i < urls.length; i++) {
+          var dlUrl = urls[i];
+          var dlName = names[i];
+          try {
+            await new Promise(function (resolve, reject) {
+              if (!window.__kulmsAlive()) { reject(new Error("context invalid")); return; }
+              chrome.downloads.download({ url: dlUrl, filename: dlName, saveAs: false }, function (id) {
+                if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); return; }
+                resolve(id);
+              });
+            });
+          } catch (e) {
+            console.warn("[KULMS] download failed:", dlUrl, e);
+          }
+          newDownloaded.add(dlUrl);
+        }
+        // ストレージ更新
+        var arr = Array.from(newDownloaded);
+        var item = {};
+        item[storageKey] = arr;
+        window.__kulmsSafeStorage.set(item);
+        downloadedSet.clear();
+        arr.forEach(function (u) { downloadedSet.add(u); });
+
+        // ハイライト除去
+        if (settings.highlightNew) {
+          fileRows.forEach(function (f) {
+            if (downloadedSet.has(f.url)) {
+              f.tr.classList.remove("kulms-new-file");
+            }
+          });
+          updateNewBtn();
+        }
+      }
+
+      // 選択ファイルをダウンロード
+      if (downloadSelectedBtn) {
+        downloadSelectedBtn.addEventListener("click", function () {
+          var checked = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]:checked');
+          var urls = [], names = [];
+          checked.forEach(function (cb) {
+            urls.push(cb.dataset.kulmsUrl);
+            names.push(cb.dataset.kulmsName);
+            cb.checked = false;
+          });
+          if (urls.length === 0) return;
+          if (selectAllCb) { selectAllCb.checked = false; selectAllCb.indeterminate = false; }
+          updateSelectedCount();
+          downloadFiles(urls, names);
+        });
+      }
+
+      // 新着ファイルをすべてダウンロード
+      if (downloadNewBtn) {
+        downloadNewBtn.addEventListener("click", function () {
+          var newFiles = fileRows.filter(function (f) { return !downloadedSet.has(f.url); });
+          var urls = newFiles.map(function (f) { return f.url; });
+          var names = newFiles.map(function (f) { return getFileName(f.tr); });
+          if (urls.length === 0) return;
+          downloadFiles(urls, names);
+        });
+      }
+
+      // tbody更新後にUI再構築（folderExpand連携）
+      var origRefreshTreeView = window.__kulmsRefreshBulkDownload;
+      window.__kulmsRefreshBulkDownload = function () {
+        // チェックボックス列を再追加
+        table.querySelectorAll("tbody tr").forEach(function (tr) {
+          if (tr.querySelector("td.kulms-check-col")) return; // 既に追加済み
+          if (isFolderRow(tr)) {
+            if (settings.bulkDownload) {
+              var emptyTd = document.createElement("td");
+              emptyTd.className = "kulms-check-col";
+              tr.insertBefore(emptyTd, tr.firstChild);
+            }
+            return;
+          }
+          var url = getFileUrl(tr);
+          if (!url) return;
+
+          var alreadyTracked = fileRows.some(function (f) { return f.url === url; });
+          if (!alreadyTracked) fileRows.push({ tr: tr, url: url });
+
+          if (settings.highlightNew && !downloadedSet.has(url)) {
+            tr.classList.add("kulms-new-file");
+          }
+
+          if (settings.bulkDownload) {
+            var cbTd = document.createElement("td");
+            cbTd.className = "kulms-check-col";
+            var cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.dataset.kulmsUrl = url;
+            cb.dataset.kulmsName = getFileName(tr);
+            cb.addEventListener("change", updateSelectedCount);
+            cbTd.appendChild(cb);
+            tr.insertBefore(cbTd, tr.firstChild);
+          }
+        });
+        updateNewBtn();
+        updateSelectedCount();
+      };
+    });
+  } // end initBulkDownload
+
   window.__kulmsSettingsReady.then(function (s) {
     if (s.hideResourceColumns) {
       table.classList.add("kulms-hide-columns");
+    }
+    if (s.bulkDownload || s.highlightNew) {
+      initBulkDownload(s);
     }
     if (!s.folderExpand && !s.autoExpandAll) return;
     initFolderFeatures(s);
