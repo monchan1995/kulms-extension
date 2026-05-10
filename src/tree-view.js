@@ -311,71 +311,136 @@
     window.__kulmsSafeStorage.get(storageKey, function (result) {
       var downloadedSet = new Set(result[storageKey] || []);
 
-      // 各ファイル行を処理
+      // 「既読」(左) → チェック(右)。insertBefore で先頭へ入れるときは check → read の順が先頭2列になる
+      function ensureFolderRowPlaceholderCols(tr) {
+        if (!settings.highlightNew && !settings.bulkDownload) return;
+        var readTd = tr.querySelector("td.kulms-mark-read-col");
+        var checkTd = tr.querySelector("td.kulms-check-col");
+
+        var hasRequiredPlaceholderCols =
+          (settings.highlightNew && settings.bulkDownload
+            ? readTd && checkTd
+            : settings.highlightNew
+              ? !!readTd
+              : !!checkTd);
+
+        function touchOrderForFolder() {
+          readTd = tr.querySelector("td.kulms-mark-read-col");
+          checkTd = tr.querySelector("td.kulms-check-col");
+          if (settings.highlightNew && settings.bulkDownload && readTd && checkTd) {
+            if (readTd.nextElementSibling !== checkTd) tr.insertBefore(readTd, checkTd);
+          }
+        }
+
+        if (hasRequiredPlaceholderCols) {
+          touchOrderForFolder();
+          return;
+        }
+
+        if (settings.bulkDownload && !checkTd) {
+          checkTd = document.createElement("td");
+          checkTd.className = "kulms-check-col";
+          tr.insertBefore(checkTd, tr.firstChild);
+        }
+        if (settings.highlightNew && !readTd) {
+          readTd = document.createElement("td");
+          readTd.className = "kulms-mark-read-col";
+          tr.insertBefore(readTd, tr.firstChild);
+        }
+        touchOrderForFolder();
+      }
+
+      function bindRowCheckboxToggle(tr, cb) {
+        tr.classList.add("kulms-selectable-row");
+        tr.addEventListener("click", function onRowToggle(e) {
+          if (!tr.contains(cb)) return;
+          if (e.target.closest("a, button, input, .btn-group")) return;
+          cb.checked = !cb.checked;
+          updateSelectedCount();
+        });
+      }
+
+      function ensureFileRowCols(tr, url) {
+        if (!settings.highlightNew && !settings.bulkDownload) return;
+
+        var readTd = tr.querySelector("td.kulms-mark-read-col");
+        var checkTd = tr.querySelector("td.kulms-check-col");
+
+        if (settings.highlightNew && !readTd) {
+          readTd = document.createElement("td");
+          readTd.className = "kulms-mark-read-col";
+          if (settings.bulkDownload && checkTd) {
+            tr.insertBefore(readTd, checkTd);
+          } else {
+            tr.insertBefore(readTd, tr.firstChild);
+          }
+        }
+        if (settings.bulkDownload && !checkTd) {
+          checkTd = document.createElement("td");
+          checkTd.className = "kulms-check-col";
+          var readLead = settings.highlightNew
+            ? tr.querySelector("td.kulms-mark-read-col")
+            : null;
+          if (readLead) {
+            readLead.insertAdjacentElement("afterend", checkTd);
+          } else {
+            tr.insertBefore(checkTd, tr.firstChild);
+          }
+        }
+
+        readTd = tr.querySelector("td.kulms-mark-read-col");
+        checkTd = tr.querySelector("td.kulms-check-col");
+        if (settings.highlightNew && settings.bulkDownload && readTd && checkTd && readTd.nextElementSibling !== checkTd) {
+          tr.insertBefore(readTd, checkTd);
+        }
+
+        if (settings.highlightNew && readTd) {
+          readTd.innerHTML = "";
+          if (!downloadedSet.has(url)) {
+            tr.classList.add("kulms-new-file");
+            var markBtn = document.createElement("button");
+            markBtn.className = "kulms-mark-read-row-btn";
+            markBtn.title = t("btnMarkReadRow");
+            markBtn.textContent = "既読";
+            markBtn.addEventListener("click", function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              markAsRead([url]);
+            });
+            readTd.appendChild(markBtn);
+          } else {
+            tr.classList.remove("kulms-new-file");
+          }
+        }
+
+        if (settings.bulkDownload && checkTd) {
+          var cb = checkTd.querySelector('input[type="checkbox"]');
+          if (!cb) {
+            cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.addEventListener("change", updateSelectedCount);
+            checkTd.appendChild(cb);
+          }
+          cb.dataset.kulmsUrl = url;
+          cb.dataset.kulmsName = getFileName(tr);
+          if (!tr.dataset.kulmsRowToggleBound) {
+            bindRowCheckboxToggle(tr, cb);
+            tr.dataset.kulmsRowToggleBound = "1";
+          }
+        }
+      }
+
       var fileRows = [];
       table.querySelectorAll("tbody tr").forEach(function (tr) {
         if (isFolderRow(tr)) {
-          // フォルダ行：追加列のダミーセルを挿入
-          if (settings.highlightNew) {
-            var emptyReadTd = document.createElement("td");
-            emptyReadTd.className = "kulms-mark-read-col";
-            tr.insertBefore(emptyReadTd, tr.firstChild);
-          }
-          if (settings.bulkDownload) {
-            var emptyTd = document.createElement("td");
-            emptyTd.className = "kulms-check-col";
-            tr.insertBefore(emptyTd, tr.firstChild);
-          }
+          ensureFolderRowPlaceholderCols(tr);
           return;
         }
 
         var url = getFileUrl(tr);
         if (!url) return;
         fileRows.push({ tr: tr, url: url });
-
-        // 既読ボタン列（highlightNew有効時、常に列を追加してレイアウトを揃える）
-        if (settings.highlightNew) {
-          (function (rowUrl, rowTr) {
-            var readTd = document.createElement("td");
-            readTd.className = "kulms-mark-read-col";
-            if (!downloadedSet.has(rowUrl)) {
-              rowTr.classList.add("kulms-new-file");
-              var markBtn = document.createElement("button");
-              markBtn.className = "kulms-mark-read-row-btn";
-              markBtn.title = t("btnMarkReadRow");
-              markBtn.textContent = "既読";
-              markBtn.addEventListener("click", function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                markAsRead([rowUrl]);
-              });
-              readTd.appendChild(markBtn);
-            }
-            rowTr.insertBefore(readTd, rowTr.firstChild);
-          })(url, tr);
-        }
-
-        // チェックボックスを行に追加（bulkDownload有効時）
-        if (settings.bulkDownload) {
-          var cbTd = document.createElement("td");
-          cbTd.className = "kulms-check-col";
-          var cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.dataset.kulmsUrl = url;
-          cb.dataset.kulmsName = getFileName(tr);
-          cb.addEventListener("change", updateSelectedCount);
-          cbTd.appendChild(cb);
-          tr.insertBefore(cbTd, tr.firstChild);
-
-          // 行の余白クリックでチェックボックスをトグル
-          tr.classList.add("kulms-selectable-row");
-          tr.addEventListener("click", function (e) {
-            // リンク・ボタン・チェックボックス自体のクリックは除外
-            if (e.target.closest("a, button, input, .btn-group")) return;
-            cb.checked = !cb.checked;
-            updateSelectedCount();
-          });
-        }
+        ensureFileRowCols(tr, url);
       });
 
       // 新着件数を更新
@@ -526,17 +591,10 @@
       }
 
       // tbody更新後にUI再構築（folderExpand連携）
-      var origRefreshTreeView = window.__kulmsRefreshBulkDownload;
       window.__kulmsRefreshBulkDownload = function () {
-        // チェックボックス列を再追加
         table.querySelectorAll("tbody tr").forEach(function (tr) {
-          if (tr.querySelector("td.kulms-check-col")) return; // 既に追加済み
           if (isFolderRow(tr)) {
-            if (settings.bulkDownload) {
-              var emptyTd = document.createElement("td");
-              emptyTd.className = "kulms-check-col";
-              tr.insertBefore(emptyTd, tr.firstChild);
-            }
+            ensureFolderRowPlaceholderCols(tr);
             return;
           }
           var url = getFileUrl(tr);
@@ -545,21 +603,7 @@
           var alreadyTracked = fileRows.some(function (f) { return f.url === url; });
           if (!alreadyTracked) fileRows.push({ tr: tr, url: url });
 
-          if (settings.highlightNew && !downloadedSet.has(url)) {
-            tr.classList.add("kulms-new-file");
-          }
-
-          if (settings.bulkDownload) {
-            var cbTd = document.createElement("td");
-            cbTd.className = "kulms-check-col";
-            var cb = document.createElement("input");
-            cb.type = "checkbox";
-            cb.dataset.kulmsUrl = url;
-            cb.dataset.kulmsName = getFileName(tr);
-            cb.addEventListener("change", updateSelectedCount);
-            cbTd.appendChild(cb);
-            tr.insertBefore(cbTd, tr.firstChild);
-          }
+          ensureFileRowCols(tr, url);
         });
         updateNewBtn();
         updateSelectedCount();
