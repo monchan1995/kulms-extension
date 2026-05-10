@@ -26,7 +26,9 @@
     var id = String(collectionId || "").trim();
     if (!id) return "\uffff";
     id = id.replace(/^\/group\/[^/]+\//, "");
-    return id.replace(/\/+$/, "") + "/";
+    id = id.replace(/\/+$/, "");
+    if (!id) return "/";
+    return id + "/";
   }
 
   function kulmsGetResourceRowSortKey(tr) {
@@ -38,9 +40,11 @@
       var a = links[i];
       if (!a.getAttribute("onclick") && a.href && a.href !== "#") {
         var u = a.href.split("?")[0];
-        var m = u.match(/\/access\/content\/group\/[^/]+\/(.+)$/i);
+        var m = u.match(/\/access\/content\/group\/[^/?#]+\/?([^?#]*)$/i);
         if (m) {
-          var path = decodeURIComponent(m[1]);
+          var tail = (m[1] || "").replace(/\/+$/, "");
+          if (!tail) return "";
+          var path = decodeURIComponent(tail);
           return path.replace(/\/+$/, "");
         }
       }
@@ -78,18 +82,44 @@
     return 0;
   }
 
+  /** タイトル行・全幅ナビ行など（常にtbody先頭側に固定） */
+  function kulmsIsMetaHeaderRow(tr) {
+    if (tr.querySelector("td[colspan]")) return true;
+    if (!tr.querySelector("td.title, td.specialLink.title")) return true;
+    return false;
+  }
+
   function kulmsReorderResourceRowsByPath(resourceTable) {
     var tb = resourceTable.querySelector("tbody");
     if (!tb) return;
     var rows = Array.prototype.slice.call(tb.querySelectorAll("tr"));
     if (rows.length < 2) return;
-    rows.sort(function (a, b) {
+
+    var meta = [];
+    var orphanTitle = [];
+    var resource = [];
+
+    rows.forEach(function (tr) {
+      if (kulmsIsMetaHeaderRow(tr)) {
+        meta.push(tr);
+        return;
+      }
+      var k = kulmsGetResourceRowSortKey(tr);
+      if (k === "\uffff") {
+        orphanTitle.push(tr);
+        return;
+      }
+      resource.push(tr);
+    });
+
+    resource.sort(function (a, b) {
       return kulmsPathTreeCompare(
         kulmsGetResourceRowSortKey(a),
         kulmsGetResourceRowSortKey(b)
       );
     });
-    rows.forEach(function (tr) {
+
+    meta.concat(orphanTitle).concat(resource).forEach(function (tr) {
       tb.appendChild(tr);
     });
   }
