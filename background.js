@@ -5,6 +5,25 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.remove(["kulms-syllabus-catalog", "kulms-textbooks"]);
 });
 
+// === LMSダウンロード追跡 ===
+// 右クリック保存・PDFビューアのDLボタンなど、あらゆる経路のダウンロードを記録する
+chrome.downloads.onCreated.addListener((downloadItem) => {
+  const url = downloadItem.url;
+  if (!url.includes("lms.gakusei.kyoto-u.ac.jp/access/content/")) return;
+  const match = url.match(/\/group\/([^/]+)\//);
+  if (!match) return;
+  const siteId = match[1];
+  const key = "kulms-downloaded-" + siteId;
+  chrome.storage.local.get(key, (result) => {
+    const set = new Set(result[key] || []);
+    // クエリパラメータを除いたURLで正規化して記録
+    const normalizedUrl = url.split("?")[0];
+    set.add(normalizedUrl);
+    set.add(url); // オリジナルも念のため記録
+    chrome.storage.local.set({ [key]: Array.from(set) });
+  });
+});
+
 // === シラバス教科書取得ハンドラ ===
 
 const SYLLABUS_BASE = "https://www.k.kyoto-u.ac.jp/external/open_syllabus";
@@ -457,6 +476,17 @@ async function fetchSyllabusDetail(lectureNo, departmentNo) {
 
 // メッセージハンドラ
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "downloadFile") {
+    chrome.downloads.download({ url: message.url, filename: message.filename, saveAs: false }, (id) => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ error: chrome.runtime.lastError.message });
+      } else {
+        sendResponse({ id });
+      }
+    });
+    return true; // 非同期応答のため
+  }
+
   if (message.action !== "fetchTextbooks") return false;
 
   const courseName = message.courseName;

@@ -1722,3 +1722,210 @@ body.kulms-panel-pushed .kulms-top-favbar {
   }
 }
 
+/* === 一括ダウンロード機能 === */
+
+.kulms-bulk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f0f4ff;
+  border: 1px solid #c8d8ff;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.kulms-bulk-btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.kulms-bulk-btn-primary {
+  background: #1a73e8;
+  color: #fff;
+}
+
+.kulms-bulk-btn-primary:hover:not(:disabled) {
+  background: #1558b0;
+}
+
+.kulms-bulk-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.kulms-bulk-btn-new {
+  background: #e67700;
+  color: #fff;
+}
+
+.kulms-bulk-btn-new:hover:not(:disabled) {
+  background: #b85d00;
+}
+
+.kulms-bulk-btn-new:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.kulms-bulk-select-all {
+  margin-right: 4px;
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #1a73e8;
+}
+
+.kulms-bulk-label {
+  font-size: 13px;
+  color: #444;
+  user-select: none;
+}
+
+/* チェックボックス列 */
+/* チェックボックス列：固定幅・縮小禁止 */
+table.resourcesList th.kulms-check-col,
+table.resourcesList td.kulms-check-col {
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  text-align: center !important;
+  padding: 4px 2px !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+
+/* title列がチェックボックス列追加後も縮まないよう最小幅を確保 */
+table.resourcesList td.title,
+table.resourcesList th.title,
+table.resourcesList td.specialLink,
+table.resourcesList th.specialLink {
+  min-width: 320px !important;
+  white-space: normal !important;
+}
+
+/* テーブル全体が狭い場合は横スクロールで対応 */
+table.resourcesList {
+  min-width: 600px;
+}
+
+table.resourcesList td.kulms-check-col input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #1a73e8;
+}
+
+/* Bootstrap table-striped の縞々を完全廃止 */
+table.resourcesList tr > td,
+table.resourcesList tr > th {
+  --bs-table-accent-bg: transparent;
+  --bs-table-striped-bg: transparent;
+  --bs-table-hover-bg: transparent;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 行クリックで選択できる行 */
+table.resourcesList tr.kulms-selectable-row {
+  cursor: pointer;
+}
+
+table.resourcesList tr.kulms-selectable-row:hover > td {
+  background-color: rgba(26, 115, 232, 0.06) !important;
+}
+
+/* ツールバー既読ボタン */
+.kulms-bulk-btn-mark-read {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  color: inherit;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.kulms-bulk-btn-mark-read:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.15);
+}
+.kulms-bulk-btn-mark-read:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* 既読ボタン列 */
+table.resourcesList th.kulms-mark-read-col,
+table.resourcesList td.kulms-mark-read-col {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  text-align: center !important;
+  padding: 4px 2px !important;
+  vertical-align: middle !important;
+}
+
+/* 行内既読ボタン */
+.kulms-mark-read-row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 20px;
+  padding: 0 5px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.15);
+  color: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.1s;
+}
+table.resourcesList tr.kulms-new-file .kulms-mark-read-row-btn {
+  opacity: 0.5;
+}
+table.resourcesList tr:hover .kulms-mark-read-row-btn {
+  opacity: 0.7;
+}
+table.resourcesList tr:hover .kulms-mark-read-row-btn:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.35);
+}
+
+/* 新着ハイライト */
+table.resourcesList tr.kulms-new-file > td {
+  background-color: rgba(26, 115, 232, 0.08) !important;
+}
+
+table.resourcesList tr.kulms-new-file:hover > td {
+  background-color: rgba(26, 115, 232, 0.15) !important;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .kulms-bulk-toolbar {
+    background: #1e2a3a;
+    border-color: #2d4a6e;
+  }
+  .kulms-bulk-label {
+    color: #ccc;
+  }
+  table.resourcesList tr.kulms-new-file > td {
+    background-color: rgba(58, 140, 232, 0.35) !important;
+    background-image: none !important;
+  }
+  table.resourcesList tr.kulms-new-file:hover > td {
+    background-color: rgba(58, 140, 232, 0.48) !important;
+    background-image: none !important;
+  }
+}
+

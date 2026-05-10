@@ -155,6 +155,42 @@
   "featHideResourceColumnsDesc": {
     "message": "Hide access, creator, modified date, and size columns in resources"
   },
+  "featBulkDownload": {
+    "message": "Bulk Download"
+  },
+  "featBulkDownloadDesc": {
+    "message": "Show checkboxes on resource files and download selected files at once"
+  },
+  "featHighlightNew": {
+    "message": "Highlight New Files"
+  },
+  "featHighlightNewDesc": {
+    "message": "Highlight undownloaded files and download all new files at once"
+  },
+  "btnDownloadSelected": {
+    "message": "Download Selected ($COUNT$ files)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "btnDownloadNew": {
+    "message": "Download All New ($COUNT$ files)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "labelSelectAll": {
+    "message": "Select All"
+  },
+  "btnMarkRead": {
+    "message": "Mark Selected as Read ($COUNT$)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "btnMarkReadRow": {
+    "message": "Mark as read (dismiss highlight)"
+  },
   "featCourseNameCleanup": {
     "message": "Course Name Cleanup"
   },
