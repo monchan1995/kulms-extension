@@ -151,9 +151,24 @@
     table.addEventListener(
       "click",
       function (e) {
+        // アイコンリンク（onclick属性あり）への直接クリック
         var link = e.target.closest(
           'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
         );
+
+        // フォルダ名テキストリンクへのクリック：同じ行のアイコンリンクを探す
+        if (!link) {
+          var clickedAnchor = e.target.closest("td.title a");
+          if (clickedAnchor) {
+            var tr = clickedAnchor.closest("tr");
+            if (tr) {
+              link = tr.querySelector(
+                'td.title a[onclick*="doExpand_collection"], td.title a[onclick*="doCollapse_collection"]'
+              );
+            }
+          }
+        }
+
         if (!link || isBusy) return;
 
         e.preventDefault();
