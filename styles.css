@@ -1823,8 +1823,12 @@ table.resourcesList td.kulms-check-col input[type="checkbox"] {
   accent-color: #1a73e8;
 }
 
-/* Bootstrap table-striped の縞々を打ち消し（background-image経由のグラデーションも除去） */
-table.resourcesList tr > td {
+/* Bootstrap table-striped の縞々を完全廃止 */
+table.resourcesList tr > td,
+table.resourcesList tr > th {
+  --bs-table-accent-bg: transparent;
+  --bs-table-striped-bg: transparent;
+  --bs-table-hover-bg: transparent;
   background-color: transparent !important;
   background-image: none !important;
 }
