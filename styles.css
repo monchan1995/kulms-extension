@@ -1804,8 +1804,16 @@ table.resourcesList td.kulms-check-col {
 
 /* title列がチェックボックス列追加後も縮まないよう最小幅を確保 */
 table.resourcesList td.title,
-table.resourcesList th.title {
-  min-width: 200px !important;
+table.resourcesList th.title,
+table.resourcesList td.specialLink,
+table.resourcesList th.specialLink {
+  min-width: 320px !important;
+  white-space: normal !important;
+}
+
+/* テーブル全体が狭い場合は横スクロールで対応 */
+table.resourcesList {
+  min-width: 600px;
 }
 
 table.resourcesList td.kulms-check-col input[type="checkbox"] {
