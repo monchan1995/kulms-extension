@@ -179,6 +179,9 @@
       "count": { "content": "$1" }
     }
   },
+  "labelSelectAll": {
+    "message": "すべて選択"
+  },
   "btnMarkRead": {
     "message": "選択を既読にする ($COUNT$件)",
     "placeholders": {

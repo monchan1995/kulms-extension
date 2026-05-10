@@ -179,6 +179,9 @@
       "count": { "content": "$1" }
     }
   },
+  "labelSelectAll": {
+    "message": "Select All"
+  },
   "btnMarkRead": {
     "message": "Mark Selected as Read ($COUNT$)",
     "placeholders": {

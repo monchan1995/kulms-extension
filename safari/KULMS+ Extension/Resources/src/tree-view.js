@@ -253,7 +253,7 @@
       selectAllCb.id = "kulms-select-all";
       var selectAllLabel = document.createElement("span");
       selectAllLabel.className = "kulms-bulk-label";
-      selectAllLabel.textContent = t("featBulkDownload");
+      selectAllLabel.textContent = t("labelSelectAll");
       selectAllWrap.appendChild(selectAllCb);
       selectAllWrap.appendChild(selectAllLabel);
       toolbar.appendChild(selectAllWrap);
