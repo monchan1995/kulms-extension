@@ -179,6 +179,15 @@
       "count": { "content": "$1" }
     }
   },
+  "btnMarkRead": {
+    "message": "選択を既読にする ($COUNT$件)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "btnMarkReadRow": {
+    "message": "既読にする（ハイライトを消す）"
+  },
   "featCourseNameCleanup": {
     "message": "科目名の整理"
   },

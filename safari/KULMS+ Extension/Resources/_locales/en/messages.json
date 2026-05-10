@@ -179,6 +179,15 @@
       "count": { "content": "$1" }
     }
   },
+  "btnMarkRead": {
+    "message": "Mark Selected as Read ($COUNT$)",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "btnMarkReadRow": {
+    "message": "Mark as read (dismiss highlight)"
+  },
   "featCourseNameCleanup": {
     "message": "Course Name Cleanup"
   },

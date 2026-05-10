@@ -1830,6 +1830,52 @@ table.resourcesList tr.kulms-selectable-row:hover > td {
   background-color: rgba(26, 115, 232, 0.06) !important;
 }
 
+/* ツールバー既読ボタン */
+.kulms-bulk-btn-mark-read {
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  color: inherit;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.kulms-bulk-btn-mark-read:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.15);
+}
+.kulms-bulk-btn-mark-read:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* 行内既読ボタン */
+.kulms-mark-read-row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.2);
+  color: inherit;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  vertical-align: middle;
+}
+table.resourcesList tr:hover .kulms-mark-read-row-btn,
+table.resourcesList tr.kulms-new-file .kulms-mark-read-row-btn {
+  opacity: 0.6;
+}
+table.resourcesList tr:hover .kulms-mark-read-row-btn:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.4);
+}
+
 /* 新着ハイライト */
 table.resourcesList tr.kulms-new-file > td {
   background-color: rgba(26, 115, 232, 0.08) !important;

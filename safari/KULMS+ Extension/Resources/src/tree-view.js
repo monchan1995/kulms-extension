@@ -155,24 +155,9 @@
     table.addEventListener(
       "click",
       function (e) {
-        // アイコンリンク（onclick属性あり）への直接クリック
         var link = e.target.closest(
           'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
         );
-
-        // フォルダ名テキストリンクへのクリック：同じ行のアイコンリンクを探す
-        if (!link) {
-          var clickedAnchor = e.target.closest("td.title a");
-          if (clickedAnchor) {
-            var tr = clickedAnchor.closest("tr");
-            if (tr) {
-              link = tr.querySelector(
-                'td.title a[onclick*="doExpand_collection"], td.title a[onclick*="doCollapse_collection"]'
-              );
-            }
-          }
-        }
-
         if (!link || isBusy) return;
 
         e.preventDefault();
@@ -294,6 +279,16 @@
       toolbar.appendChild(downloadNewBtn);
     }
 
+    // 既読にするボタン（bulkDownload or highlightNew有効時）
+    var markReadBtn = null;
+    if (settings.bulkDownload || settings.highlightNew) {
+      markReadBtn = document.createElement("button");
+      markReadBtn.className = "kulms-bulk-btn kulms-bulk-btn-mark-read";
+      markReadBtn.disabled = true;
+      markReadBtn.textContent = t("btnMarkRead", ["0"]);
+      toolbar.appendChild(markReadBtn);
+    }
+
     // ツールバーを table の直前に挿入
     table.parentNode.insertBefore(toolbar, table);
 
@@ -331,9 +326,23 @@
         if (!url) return;
         fileRows.push({ tr: tr, url: url });
 
-        // 新着ハイライト
+        // 新着ハイライト + 行内既読ボタン
         if (settings.highlightNew && !downloadedSet.has(url)) {
           tr.classList.add("kulms-new-file");
+          // title列に既読ボタンを追加
+          var titleTd = tr.querySelector("td.title");
+          if (titleTd) {
+            var markBtn = document.createElement("button");
+            markBtn.className = "kulms-mark-read-row-btn";
+            markBtn.title = t("btnMarkReadRow");
+            markBtn.textContent = "✕";
+            markBtn.addEventListener("click", function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              markAsRead([url]);
+            });
+            titleTd.appendChild(markBtn);
+          }
         }
 
         // チェックボックスを行に追加（bulkDownload有効時）
@@ -351,6 +360,7 @@
           // 行の余白クリックでチェックボックスをトグル
           tr.classList.add("kulms-selectable-row");
           tr.addEventListener("click", function (e) {
+            // リンク・ボタン・チェックボックス自体のクリックは除外
             if (e.target.closest("a, button, input, .btn-group")) return;
             cb.checked = !cb.checked;
             updateSelectedCount();
@@ -371,11 +381,16 @@
       }
 
       function updateSelectedCount() {
-        if (!downloadSelectedBtn) return;
         var checked = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]:checked');
         var cnt = checked.length;
-        downloadSelectedBtn.textContent = t("btnDownloadSelected", [String(cnt)]);
-        downloadSelectedBtn.disabled = cnt === 0;
+        if (downloadSelectedBtn) {
+          downloadSelectedBtn.textContent = t("btnDownloadSelected", [String(cnt)]);
+          downloadSelectedBtn.disabled = cnt === 0;
+        }
+        if (markReadBtn) {
+          markReadBtn.textContent = t("btnMarkRead", [String(cnt)]);
+          markReadBtn.disabled = cnt === 0;
+        }
         // 全選択チェックボックスの状態同期
         if (selectAllCb) {
           var allCbs = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]');
@@ -436,6 +451,27 @@
         }
       }
 
+      // URLを既読としてストレージに記録しハイライト除去
+      function markAsRead(urls) {
+        var newDownloaded = new Set(downloadedSet);
+        urls.forEach(function (u) { newDownloaded.add(u); });
+        var arr = Array.from(newDownloaded);
+        var item = {};
+        item[storageKey] = arr;
+        window.__kulmsSafeStorage.set(item);
+        downloadedSet.clear();
+        arr.forEach(function (u) { downloadedSet.add(u); });
+        fileRows.forEach(function (f) {
+          if (downloadedSet.has(f.url)) {
+            f.tr.classList.remove("kulms-new-file");
+            var btn = f.tr.querySelector(".kulms-mark-read-row-btn");
+            if (btn) btn.remove();
+          }
+        });
+        updateNewBtn();
+        updateSelectedCount();
+      }
+
       // 選択ファイルをダウンロード
       if (downloadSelectedBtn) {
         downloadSelectedBtn.addEventListener("click", function () {
@@ -450,6 +486,21 @@
           if (selectAllCb) { selectAllCb.checked = false; selectAllCb.indeterminate = false; }
           updateSelectedCount();
           downloadFiles(urls, names);
+        });
+      }
+
+      // 選択行を既読にする
+      if (markReadBtn) {
+        markReadBtn.addEventListener("click", function () {
+          var checked = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]:checked');
+          var urls = [];
+          checked.forEach(function (cb) {
+            urls.push(cb.dataset.kulmsUrl);
+            cb.checked = false;
+          });
+          if (urls.length === 0) return;
+          if (selectAllCb) { selectAllCb.checked = false; selectAllCb.indeterminate = false; }
+          markAsRead(urls);
         });
       }
 
