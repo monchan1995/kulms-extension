@@ -60,13 +60,13 @@ window.__kulmsSafeStorage = {
 // === 設定読み込み ===
 
 window.__kulmsDefaults = {
-  textbooks: true, tabColoring: true, tabColorStyle: "bold",
-  folderExpand: false, autoExpandAll: false, hideResourceColumns: false, bulkDownload: false, highlightNew: false, courseNameCleanup: false, pinSort: false,
-  courseRowClick: false, toolVisibility: false, sidebarResize: false,
-  notificationBadge: false, sidebarStyle: false, memos: true,
-  panelPush: false, previewMode: false, autoComplete: true, currentPeriodHighlight: false,
-  topFavbar: false,
-  topFavbarSize: "medium",
+  textbooks: false, tabColoring: true, tabColorStyle: "bold",
+  folderExpand: true, autoExpandAll: false, hideResourceColumns: true, bulkDownload: true, highlightNew: true, courseNameCleanup: true, pinSort: false,
+  courseRowClick: true, toolVisibility: false, sidebarResize: false,
+  notificationBadge: true, sidebarStyle: false, memos: false,
+  panelPush: true, previewMode: false, autoComplete: true, currentPeriodHighlight: false,
+  topFavbar: true,
+  topFavbarSize: "large",
   fetchInterval: 120,
   dangerHours: 24,
   warningDays: 5,
@@ -75,7 +75,7 @@ window.__kulmsDefaults = {
   colorWarning: "#d7aa57",
   colorSuccess: "#62b665",
   colorOther: "#777777",
-  language: "auto"
+  language: "ja"
 };
 
 if (!window.__kulmsSettingsReady) window.__kulmsSettingsReady = new Promise(function (resolve) {
