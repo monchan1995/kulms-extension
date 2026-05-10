@@ -292,10 +292,15 @@
     // ツールバーを table の直前に挿入
     table.parentNode.insertBefore(toolbar, table);
 
-    // チェックボックス列をヘッダーに追加（bulkDownload有効時）
-    if (settings.bulkDownload) {
-      var thead = table.querySelector("thead tr");
-      if (thead) {
+    // ヘッダーに列を追加
+    var thead = table.querySelector("thead tr");
+    if (thead) {
+      if (settings.highlightNew) {
+        var thRead = document.createElement("th");
+        thRead.className = "kulms-mark-read-col";
+        thead.insertBefore(thRead, thead.firstChild);
+      }
+      if (settings.bulkDownload) {
         var th = document.createElement("th");
         th.className = "kulms-check-col";
         thead.insertBefore(th, thead.firstChild);
@@ -310,14 +315,16 @@
       var fileRows = [];
       table.querySelectorAll("tbody tr").forEach(function (tr) {
         if (isFolderRow(tr)) {
-          // フォルダ行：チェックボックス列のダミーセルを追加
+          // フォルダ行：追加列のダミーセルを挿入
+          if (settings.highlightNew) {
+            var emptyReadTd = document.createElement("td");
+            emptyReadTd.className = "kulms-mark-read-col";
+            tr.insertBefore(emptyReadTd, tr.firstChild);
+          }
           if (settings.bulkDownload) {
-            var td = tr.querySelector("td");
-            if (td) {
-              var emptyTd = document.createElement("td");
-              emptyTd.className = "kulms-check-col";
-              tr.insertBefore(emptyTd, tr.firstChild);
-            }
+            var emptyTd = document.createElement("td");
+            emptyTd.className = "kulms-check-col";
+            tr.insertBefore(emptyTd, tr.firstChild);
           }
           return;
         }
@@ -326,23 +333,26 @@
         if (!url) return;
         fileRows.push({ tr: tr, url: url });
 
-        // 新着ハイライト + 行内既読ボタン
-        if (settings.highlightNew && !downloadedSet.has(url)) {
-          tr.classList.add("kulms-new-file");
-          // title列に既読ボタンを追加
-          var titleTd = tr.querySelector("td.title");
-          if (titleTd) {
-            var markBtn = document.createElement("button");
-            markBtn.className = "kulms-mark-read-row-btn";
-            markBtn.title = t("btnMarkReadRow");
-            markBtn.textContent = "✕";
-            markBtn.addEventListener("click", function (e) {
-              e.preventDefault();
-              e.stopPropagation();
-              markAsRead([url]);
-            });
-            titleTd.appendChild(markBtn);
-          }
+        // 既読ボタン列（highlightNew有効時、常に列を追加してレイアウトを揃える）
+        if (settings.highlightNew) {
+          (function (rowUrl, rowTr) {
+            var readTd = document.createElement("td");
+            readTd.className = "kulms-mark-read-col";
+            if (!downloadedSet.has(rowUrl)) {
+              rowTr.classList.add("kulms-new-file");
+              var markBtn = document.createElement("button");
+              markBtn.className = "kulms-mark-read-row-btn";
+              markBtn.title = t("btnMarkReadRow");
+              markBtn.textContent = "✕";
+              markBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                markAsRead([rowUrl]);
+              });
+              readTd.appendChild(markBtn);
+            }
+            rowTr.insertBefore(readTd, rowTr.firstChild);
+          })(url, tr);
         }
 
         // チェックボックスを行に追加（bulkDownload有効時）
@@ -464,8 +474,8 @@
         fileRows.forEach(function (f) {
           if (downloadedSet.has(f.url)) {
             f.tr.classList.remove("kulms-new-file");
-            var btn = f.tr.querySelector(".kulms-mark-read-row-btn");
-            if (btn) btn.remove();
+            var readTd = f.tr.querySelector("td.kulms-mark-read-col");
+            if (readTd) readTd.innerHTML = "";
           }
         });
         updateNewBtn();

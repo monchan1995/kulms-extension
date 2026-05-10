@@ -1857,31 +1857,44 @@ table.resourcesList tr.kulms-selectable-row:hover > td {
   cursor: default;
 }
 
+/* 既読ボタン列 */
+table.resourcesList th.kulms-mark-read-col,
+table.resourcesList td.kulms-mark-read-col {
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  text-align: center !important;
+  padding: 4px 2px !important;
+  vertical-align: middle !important;
+}
+
 /* 行内既読ボタン */
 .kulms-mark-read-row-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 6px;
-  padding: 1px 5px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
   border: none;
-  border-radius: 3px;
-  background: rgba(128, 128, 128, 0.2);
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.15);
   color: inherit;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s;
-  vertical-align: middle;
+  transition: opacity 0.15s, background 0.1s;
 }
-table.resourcesList tr:hover .kulms-mark-read-row-btn,
 table.resourcesList tr.kulms-new-file .kulms-mark-read-row-btn {
-  opacity: 0.6;
+  opacity: 0.5;
+}
+table.resourcesList tr:hover .kulms-mark-read-row-btn {
+  opacity: 0.7;
 }
 table.resourcesList tr:hover .kulms-mark-read-row-btn:hover {
   opacity: 1;
-  background: rgba(128, 128, 128, 0.4);
+  background: rgba(128, 128, 128, 0.35);
 }
 
 /* 新着ハイライト */
