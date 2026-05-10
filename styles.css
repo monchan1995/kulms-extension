@@ -1864,9 +1864,9 @@ table.resourcesList tr.kulms-selectable-row:hover > td {
 /* 既読ボタン列 */
 table.resourcesList th.kulms-mark-read-col,
 table.resourcesList td.kulms-mark-read-col {
-  width: 36px !important;
-  min-width: 36px !important;
-  max-width: 36px !important;
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
   text-align: center !important;
   padding: 4px 2px !important;
   vertical-align: middle !important;
@@ -1877,9 +1877,9 @@ table.resourcesList td.kulms-mark-read-col {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
+  width: auto;
+  height: 20px;
+  padding: 0 5px;
   border: none;
   border-radius: 4px;
   background: rgba(128, 128, 128, 0.15);

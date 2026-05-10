@@ -343,7 +343,7 @@
               var markBtn = document.createElement("button");
               markBtn.className = "kulms-mark-read-row-btn";
               markBtn.title = t("btnMarkReadRow");
-              markBtn.textContent = "✕";
+              markBtn.textContent = "既読";
               markBtn.addEventListener("click", function (e) {
                 e.preventDefault();
                 e.stopPropagation();
