@@ -342,12 +342,13 @@
   }
 
   // --- 手動の展開/折りたたみクリックをインターセプト ---
-  if (settings.folderExpand) {
+    if (settings.folderExpand) {
     // キャプチャフェーズで捕まえ、インラインonclickの実行(=form.submit)を阻止
     table.addEventListener(
       "click",
       function (e) {
         if (e.target.closest("button, input, select, textarea, .btn-group, label")) return;
+        if (settings.bulkDownload && e.target.closest("td.kulms-check-col")) return;
 
         var link = e.target.closest(
           'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
@@ -546,6 +547,52 @@
     window.__kulmsSafeStorage.get(storageKey, function (result) {
       var downloadedSet = new Set(result[storageKey] || []);
 
+      /**
+       * ファイル行のソートキーがフォルダ行のソートキー配下か（collectionId 由来の末尾 / と href 由来のパスを揃えて判定）
+       */
+      function kulmsFilePathUnderFolderPrefix(filePathKey, folderSortKey) {
+        if (folderSortKey === "\uffff" || folderSortKey === undefined || folderSortKey === null)
+          return false;
+        var folderNorm = String(folderSortKey).replace(/\/+$/, "");
+        var fileNorm = String(filePathKey || "").replace(/\/+$/, "");
+        if (folderNorm === "" || folderNorm === "/") return true;
+        if (fileNorm === folderNorm) return true;
+        return (
+          fileNorm.length > folderNorm.length && fileNorm.indexOf(folderNorm + "/") === 0
+        );
+      }
+
+      function syncFolderCheckboxes() {
+        if (!settings.bulkDownload) return;
+        table.querySelectorAll("tbody tr").forEach(function (tr) {
+          if (!isFolderRow(tr)) return;
+          var cb = tr.querySelector('td.kulms-check-col input.kulms-folder-select');
+          if (!cb) return;
+          var folderKey = kulmsGetResourceRowSortKey(tr);
+          var desc = [];
+          fileRows.forEach(function (f) {
+            var fk = kulmsGetResourceRowSortKey(f.tr);
+            if (fk === "\uffff") return;
+            var fcb = f.tr.querySelector(
+              'td.kulms-check-col input[type="checkbox"][data-kulms-url]'
+            );
+            if (!fcb) return;
+            if (kulmsFilePathUnderFolderPrefix(fk, folderKey)) desc.push(fcb);
+          });
+          var n = desc.length;
+          if (n === 0) {
+            cb.checked = false;
+            cb.indeterminate = false;
+            return;
+          }
+          var sel = desc.filter(function (x) {
+            return x.checked;
+          }).length;
+          cb.checked = sel === n;
+          cb.indeterminate = sel > 0 && sel < n;
+        });
+      }
+
       // 「既読」(左) → チェック(右)。insertBefore で先頭へ入れるときは check → read の順が先頭2列になる
       function ensureFolderRowPlaceholderCols(tr) {
         if (!settings.highlightNew && !settings.bulkDownload) return;
@@ -585,14 +632,52 @@
         touchOrderForFolder();
       }
 
-      function bindRowCheckboxToggle(tr, cb) {
+      function bindRowCheckboxToggle(tr, cb, checkColOnly) {
         tr.classList.add("kulms-selectable-row");
         tr.addEventListener("click", function onRowToggle(e) {
           if (!tr.contains(cb)) return;
+          if (checkColOnly && !e.target.closest("td.kulms-check-col")) return;
           if (e.target.closest("a, button, input, .btn-group")) return;
           cb.checked = !cb.checked;
-          updateSelectedCount();
+          if (cb.classList.contains("kulms-folder-select")) {
+            cb.dispatchEvent(new Event("change", { bubbles: true }));
+          } else {
+            updateSelectedCount();
+          }
         });
+      }
+
+      function ensureFolderRowBulkCheckbox(tr) {
+        if (!settings.bulkDownload || !isFolderRow(tr)) return;
+        ensureFolderRowPlaceholderCols(tr);
+        var checkTd = tr.querySelector("td.kulms-check-col");
+        if (!checkTd) return;
+        var cb = checkTd.querySelector("input.kulms-folder-select");
+        if (!cb) {
+          cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "kulms-folder-select";
+          cb.addEventListener("change", function () {
+            var folderKey = kulmsGetResourceRowSortKey(tr);
+            var want = cb.checked;
+            fileRows.forEach(function (f) {
+              var fk = kulmsGetResourceRowSortKey(f.tr);
+              if (fk === "\uffff") return;
+              var fcb = f.tr.querySelector(
+                'td.kulms-check-col input[type="checkbox"][data-kulms-url]'
+              );
+              if (!fcb) return;
+              if (kulmsFilePathUnderFolderPrefix(fk, folderKey)) fcb.checked = want;
+            });
+            cb.indeterminate = false;
+            updateSelectedCount();
+          });
+          checkTd.appendChild(cb);
+        }
+        if (!tr.dataset.kulmsFolderRowToggleBound) {
+          bindRowCheckboxToggle(tr, cb, true);
+          tr.dataset.kulmsFolderRowToggleBound = "1";
+        }
       }
 
       function ensureFileRowCols(tr, url) {
@@ -669,6 +754,7 @@
       table.querySelectorAll("tbody tr").forEach(function (tr) {
         if (isFolderRow(tr)) {
           ensureFolderRowPlaceholderCols(tr);
+          ensureFolderRowBulkCheckbox(tr);
           return;
         }
 
@@ -691,8 +777,13 @@
       }
 
       function updateSelectedCount() {
-        var checked = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]:checked');
-        var cnt = checked.length;
+        var fileCbs = table.querySelectorAll(
+          'td.kulms-check-col input[type="checkbox"][data-kulms-url]'
+        );
+        var cnt = 0;
+        fileCbs.forEach(function (cb) {
+          if (cb.checked) cnt++;
+        });
         if (downloadSelectedBtn) {
           downloadSelectedBtn.textContent = t("btnDownloadSelected", [String(cnt)]);
           downloadSelectedBtn.disabled = cnt === 0;
@@ -701,12 +792,13 @@
           markReadBtn.textContent = t("btnMarkRead", [String(cnt)]);
           markReadBtn.disabled = cnt === 0;
         }
-        // 全選択チェックボックスの状態同期
+        // 全選択チェックボックスの状態同期（ファイル行のみ）
         if (selectAllCb) {
-          var allCbs = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]');
-          selectAllCb.indeterminate = cnt > 0 && cnt < allCbs.length;
-          selectAllCb.checked = allCbs.length > 0 && cnt === allCbs.length;
+          var total = fileCbs.length;
+          selectAllCb.indeterminate = cnt > 0 && cnt < total;
+          selectAllCb.checked = total > 0 && cnt === total;
         }
+        syncFolderCheckboxes();
       }
 
       updateNewBtn();
@@ -715,9 +807,11 @@
       // 全選択の動作
       if (selectAllCb) {
         selectAllCb.addEventListener("change", function () {
-          table.querySelectorAll('td.kulms-check-col input[type="checkbox"]').forEach(function (cb) {
-            cb.checked = selectAllCb.checked;
-          });
+          table
+            .querySelectorAll('td.kulms-check-col input[type="checkbox"][data-kulms-url]')
+            .forEach(function (cb) {
+              cb.checked = selectAllCb.checked;
+            });
           updateSelectedCount();
         });
       }
@@ -788,6 +882,7 @@
           var checked = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]:checked');
           var urls = [], names = [];
           checked.forEach(function (cb) {
+            if (!cb.dataset.kulmsUrl) return;
             urls.push(cb.dataset.kulmsUrl);
             names.push(cb.dataset.kulmsName);
             cb.checked = false;
@@ -805,6 +900,7 @@
           var checked = table.querySelectorAll('td.kulms-check-col input[type="checkbox"]:checked');
           var urls = [];
           checked.forEach(function (cb) {
+            if (!cb.dataset.kulmsUrl) return;
             urls.push(cb.dataset.kulmsUrl);
             cb.checked = false;
           });
@@ -830,6 +926,7 @@
         table.querySelectorAll("tbody tr").forEach(function (tr) {
           if (isFolderRow(tr)) {
             ensureFolderRowPlaceholderCols(tr);
+            ensureFolderRowBulkCheckbox(tr);
             return;
           }
           var url = getFileUrl(tr);
