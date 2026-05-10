@@ -457,6 +457,17 @@ async function fetchSyllabusDetail(lectureNo, departmentNo) {
 
 // メッセージハンドラ
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "downloadFile") {
+    chrome.downloads.download({ url: message.url, filename: message.filename, saveAs: false }, (id) => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ error: chrome.runtime.lastError.message });
+      } else {
+        sendResponse({ id });
+      }
+    });
+    return true;
+  }
+
   if (message.action !== "fetchTextbooks") return false;
 
   const courseName = message.courseName;

@@ -1804,6 +1804,11 @@ table.resourcesList td.kulms-check-col input[type="checkbox"] {
   accent-color: #1a73e8;
 }
 
+/* Bootstrap table-striped の縞々を打ち消し */
+table.resourcesList tr > td {
+  background-color: transparent !important;
+}
+
 /* 新着ハイライト */
 table.resourcesList tr.kulms-new-file > td {
   background-color: #fffbe6 !important;

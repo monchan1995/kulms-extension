@@ -398,9 +398,10 @@
           try {
             await new Promise(function (resolve, reject) {
               if (!window.__kulmsAlive()) { reject(new Error("context invalid")); return; }
-              chrome.downloads.download({ url: dlUrl, filename: dlName, saveAs: false }, function (id) {
+              chrome.runtime.sendMessage({ action: "downloadFile", url: dlUrl, filename: dlName }, function (resp) {
                 if (chrome.runtime.lastError) { reject(chrome.runtime.lastError); return; }
-                resolve(id);
+                if (resp && resp.error) { reject(new Error(resp.error)); return; }
+                resolve(resp && resp.id);
               });
             });
           } catch (e) {
