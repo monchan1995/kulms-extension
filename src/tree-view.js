@@ -59,7 +59,15 @@
     return "\uffff";
   }
 
-  /** パスセグメントで親→子の順（ツリーに近い）になるよう比較 */
+  /** 共通親を持つ直下の兄弟同士のみ、名前を比べる（同一親ではファイル優先は呼び出し側） */
+  function kulmsSiblingSegmentCompare(nameA, isFolderRowA, nameB, isFolderRowB) {
+    var rankA = isFolderRowA ? 1 : 0;
+    var rankB = isFolderRowB ? 1 : 0;
+    if (rankA !== rankB) return rankA - rankB;
+    return nameA.localeCompare(nameB, "ja", { numeric: true, sensitivity: "base" });
+  }
+
+  /** パスセグメントで親→子の順（ツリーに近い）になり、同一親直下ではファイル行をフォルダ行より前に並べる */
   function kulmsPathTreeCompare(ka, kb) {
     if (ka === kb) return 0;
     if (ka === "\uffff" && kb === "\uffff") return 0;
@@ -69,16 +77,21 @@
     var fb = /\/$/.test(kb);
     var sa = ka.replace(/\/+$/, "").split("/").filter(function (s) { return s.length; });
     var sb = kb.replace(/\/+$/, "").split("/").filter(function (s) { return s.length; });
-    var len = Math.min(sa.length, sb.length);
-    var i;
-    for (i = 0; i < len; i++) {
-      var c = sa[i].localeCompare(sb[i], "ja", { numeric: true, sensitivity: "base" });
-      if (c !== 0) return c;
+    var i = 0;
+    while (i < sa.length && i < sb.length) {
+      if (sa[i] !== sb[i]) {
+        var sameDepth = sa.length === sb.length;
+        var siblingLeaf = sameDepth && i === sa.length - 1;
+        if (siblingLeaf) {
+          return kulmsSiblingSegmentCompare(sa[i], fa, sb[i], fb);
+        }
+        return sa[i].localeCompare(sb[i], "ja", { numeric: true, sensitivity: "base" });
+      }
+      i++;
     }
     if (sa.length < sb.length) return -1;
     if (sa.length > sb.length) return 1;
-    if (fa && !fb) return -1;
-    if (!fa && fb) return 1;
+    if (fa !== fb) return fa ? 1 : -1;
     return 0;
   }
 
@@ -285,14 +298,20 @@
       var reducedMotion =
         window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!reducedMotion) {
-        oldTbody.classList.remove("kulms-tbody-flash-in");
+        var resourceTrs = [];
+        oldTbody.querySelectorAll("tr").forEach(function (tr) {
+          if (!kulmsIsMetaHeaderRow(tr)) resourceTrs.push(tr);
+        });
+        var n = resourceTrs.length;
+        var maxDelayMs = 1200;
+        var stepMs =
+          n <= 1 ? 0 : Math.min(65, Math.max(40, Math.floor(maxDelayMs / (n - 1))));
         void oldTbody.offsetWidth;
-        oldTbody.classList.add("kulms-tbody-flash-in");
-        var onFlashEnd = function () {
-          oldTbody.removeEventListener("animationend", onFlashEnd);
-          oldTbody.classList.remove("kulms-tbody-flash-in");
-        };
-        oldTbody.addEventListener("animationend", onFlashEnd);
+        resourceTrs.forEach(function (tr, i) {
+          var delayMs = Math.min(i * stepMs, maxDelayMs);
+          tr.style.setProperty("--kulms-stagger-delay", delayMs + "ms");
+          tr.classList.add("kulms-row-reveal");
+        });
       }
       return true;
     } catch (e) {
@@ -835,6 +854,7 @@
     if (s.bulkDownload || s.highlightNew) {
       initBulkDownload(s);
     }
+    kulmsReorderResourceRowsByPath(table);
     if (!s.folderExpand && !s.autoExpandAll) return;
     initFolderFeatures(s);
   });
