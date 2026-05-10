@@ -67,6 +67,39 @@
     return nameA.localeCompare(nameB, "ja", { numeric: true, sensitivity: "base" });
   }
 
+  /** ソート用：行がフォルダ扱いか（パス末尾 / だけに依存しない） */
+  function kulmsRowIsFolderResourceRow(tr) {
+    var td = tr.querySelector("td.title, td.specialLink.title");
+    if (!td) return false;
+    if (
+      td.querySelector(
+        'a[onclick*="doExpand_collection"], a[onclick*="doCollapse_collection"]'
+      )
+    ) {
+      return true;
+    }
+    if (td.querySelector(".fa-folder, .fa-folder-open")) return true;
+    if (td.querySelector('img[src*="folder"]')) return true;
+    return false;
+  }
+
+  /**
+   * 一覧ルート直下の「資料（ファイル）」をすべて先に出すためのグループ。
+   * 0 = 直下ファイルのみ / 1 = 直下フォルダ行とその配下すべて
+   */
+  function kulmsRootSortGroup(tr, k) {
+    if (k === "\uffff") return 2;
+    var hasTrailingSlash = /\/$/.test(k);
+    var stripped = k.replace(/\/+$/, "");
+    var segs = stripped.split("/").filter(function (s) {
+      return s.length;
+    });
+    var isFolder = hasTrailingSlash || kulmsRowIsFolderResourceRow(tr);
+    if (segs.length === 0 && !isFolder) return 0;
+    if (segs.length === 1 && !isFolder) return 0;
+    return 1;
+  }
+
   /** パスセグメントで親→子の順（ツリーに近い）になり、同一親直下ではファイル行をフォルダ行より前に並べる */
   function kulmsPathTreeCompare(ka, kb) {
     if (ka === kb) return 0;
@@ -93,6 +126,15 @@
     if (sa.length > sb.length) return 1;
     if (fa !== fb) return fa ? 1 : -1;
     return 0;
+  }
+
+  function kulmsResourceRowOrderCompare(trA, trB) {
+    var ka = kulmsGetResourceRowSortKey(trA);
+    var kb = kulmsGetResourceRowSortKey(trB);
+    var ga = kulmsRootSortGroup(trA, ka);
+    var gb = kulmsRootSortGroup(trB, kb);
+    if (ga !== gb) return ga - gb;
+    return kulmsPathTreeCompare(ka, kb);
   }
 
   /** タイトル行・全幅ナビ行など（常にtbody先頭側に固定） */
@@ -125,12 +167,7 @@
       resource.push(tr);
     });
 
-    resource.sort(function (a, b) {
-      return kulmsPathTreeCompare(
-        kulmsGetResourceRowSortKey(a),
-        kulmsGetResourceRowSortKey(b)
-      );
-    });
+    resource.sort(kulmsResourceRowOrderCompare);
 
     meta.concat(orphanTitle).concat(resource).forEach(function (tr) {
       tb.appendChild(tr);
